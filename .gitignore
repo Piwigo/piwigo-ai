@@ -1,0 +1,12 @@
+# Config and OS files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Node.js
+npm-debug.log
+yarn-error.log
+node_modules
+package-lock.json

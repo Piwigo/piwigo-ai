@@ -1,0 +1,11 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+.piwigoai p {
+  margin: 0;
+}
+
+.p-ai-input {
+  @apply px-2 py-1 rounded border-2! border-gray-300! bg-white! w-96 disabled:bg-gray-200!;
+}

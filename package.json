@@ -1,0 +1,11 @@
+{
+  "name": "piwigo_ai_plugin",
+  "scripts": {
+    "css:build": "tailwindcss -i css/input.css -o css/output.css --minify",
+    "css:watch": "tailwindcss -i css/input.css -o css/output.css --minify --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "tailwindcss": "^4.1.18"
+  }
+}
