@@ -4,6 +4,7 @@ Variables
 
 let p_uploader;
 let file_upload = [];
+let last_nb_files = 0;
 
 const p_ai_infos = $('#p_ai_infos');
 const p_ai_upload = $('#togglePwgAiMode');
@@ -27,8 +28,10 @@ $(function() {
   $('#togglePwgAiMode').on('change', function() {
     if ($(this).is(':checked')) {
       $('#p_ai_options_content').removeClass('hidden!');
+      reset_p_ai_infos(last_nb_files);
     } else {
       $('#p_ai_options_content').addClass('hidden!');
+      p_ai_infos.fadeOut();
     }
   });
 
@@ -60,10 +63,12 @@ $(function() {
       });
 
       up.bind('FilesAdded', function(up, files) {
+        last_nb_files = p_uploader.files.length ?? 0;
         reset_p_ai_infos(p_uploader.files.length ?? 0);
       });
 
       up.bind('FilesRemoved', function(up, files) {
+        last_nb_files = p_uploader.files.length ?? 0;
         reset_p_ai_infos(p_uploader.files.length ?? 0);
       });
 
