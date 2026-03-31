@@ -53,7 +53,7 @@ function p_ai_display_menu()
 
   $content = '<dl><dt><a href="./admin.php?page=plugin-piwigo_ai" class="admin-main"><i class="icon-robot-head"> </i><span>Piwigo AI&nbsp;</span></a></dt></dl>';
 
-  $template->block_footer_script(null, '$("#menubar").append(\''.$content.'\')');
+  $template->block_footer_script(null, '$("#menubar").append(\''.$content.'\');');
 }
 
 function p_ai_display_add_options()
