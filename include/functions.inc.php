@@ -7,30 +7,25 @@ function p_ai_init()
 
   load_language('plugin.lang', P_AI_PATH);
   $conf['piwigo_ai'] = safe_unserialize($conf['piwigo_ai']);
-  p_ai_verify_account();
 
   $template->assign(array(
     'P_AI_PATH' => P_AI_PATH,
   ));
 }
 
-function p_ai_verify_account()
+function p_ai_check_account()
 {
   global $conf;
-  if (!$conf['piwigo_ai']['account_id'])
-  {
-    $result = p_ai_post('/auth/register', [
-      'instance_url' => get_absolute_root_url(),
-    ]);
+  $conf['piwigo_ai'] = safe_unserialize($conf['piwigo_ai']);
 
-    $conf['piwigo_ai']['account_id'] = $result['account_id'];
-    $conf['piwigo_ai']['api_key'] = $result['api_key'];
+  // TODO: remove after closing beta access
+  $conf['piwigo_ai']['account_id'] = $conf['piwigo_ai']['account_id'] ?? $conf['piwigo_ai_beta_account_id'] ?? null;
+  $conf['piwigo_ai']['api_key'] = $conf['piwigo_ai']['api_key'] ?? $conf['piwigo_ai_beta_api_key'] ?? null;
 
-    conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
-  }
+  return !empty($conf['piwigo_ai']['account_id']) || !empty($conf['piwigo_ai']['api_key']);
 }
 
-function p_ai_analyze($image, $callback, $send_as_file)
+function p_ai_analyze($image, $callback, $send_as_file, $options = [])
 {
   global $conf;
 
@@ -47,9 +42,9 @@ function p_ai_analyze($image, $callback, $send_as_file)
 
   $post_data = array(
     'callback' => $callback,
-    'caption' => 'true',
-    'tagging' => 'true',
-    'ocr' => 'true',
+    'caption' => $options['caption'] ?? true,
+    'tagging' => $options['tagging'] ?? true,
+    'ocr' => $options['ocr'] ?? true,
     'language' => get_default_language(),
   );
 

@@ -15,6 +15,12 @@ $tabsheet->add('config', '<span class="icon-cog"></span>'.l10n('Configuration'),
 $tabsheet->select($page['tab']);
 $tabsheet->assign();
 
+$is_valid_account = p_ai_check_account();
+if (!$is_valid_account)
+{
+  return;
+}
+
 include_once(P_AI_PATH . 'admin/' . $page['tab'] . '.php');
 
 $template->assign(array(

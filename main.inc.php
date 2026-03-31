@@ -40,6 +40,17 @@ define('P_AI_TICKETS_TABLE',   $prefixeTable . 'ai_tickets');
 // +-----------------------------------------------------------------------+
 
 include_once(P_AI_PATH . 'include/functions.inc.php');
+$is_valid_account = p_ai_check_account();
+if (!$is_valid_account)
+{
+  global $page;
+  
+  if (!isset($_GET['page']) || !str_contains($_GET['page'], 'plugin-LocalFilesEditor'))
+  {
+    $page['errors'][] = l10n('Piwigo AI is currently in beta. To get access, please submit a request at <a href="%s" target="_blank">this link</a>.', 'https://piwigo.org/contact?type=beta%20testing');
+  }
+  return;
+}
 
 add_event_handler('init', 'p_ai_init');
 
@@ -55,6 +66,12 @@ if (defined('IN_ADMIN'))
   add_event_handler('loc_begin_admin_page', 'p_ai_loc_begin_admin_page_load_tw', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
   add_event_handler('loc_end_admin', 'p_ai_loc_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
   // add_event_handler('loc_begin_admin_page', 'p_ai_loc_begin_admin_page', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
+
+  // batch manager apply action
+  // add_event_handler('element_set_global_action', 'p_ai_element_set_global_action', 50, $admin_function);
+
+  // batch manager display action
+  // add_event_handler('loc_begin_element_set_global', 'p_ai_element_set_global_add_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function); 
 
   // TODO
   // Get list of tickets where callback is null and status pending

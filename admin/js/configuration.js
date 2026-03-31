@@ -23,6 +23,7 @@ function p_ai_save() {
   const ticket_callback = $('#ticket_callback').prop('checked');
   const description_prefix = $('#description_prefix').val();
   const ai_api_key = $('#api_key').val();
+  const ai_url = $('#url_server_ai').val();
 
   $.ajax({
     url: 'ws.php?format=json&method=pwg.ai.config',
@@ -31,7 +32,7 @@ function p_ai_save() {
     data: {
       pwg_token: PWG_TOKEN,
       ai_api_key,
-      ticket_callback,
+      ai_url,
       description_prefix
     },
     success: function(res) {

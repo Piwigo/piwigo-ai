@@ -15,6 +15,7 @@ function p_ai_add_methods($arr)
     'p_ws_ai_analyze',
     array(
       'ticket_id' => array(),
+      'cost' => array(),
       'ocr' => array('default' => null),
       'description' => array(),
       'tags' => array(),
@@ -34,10 +35,13 @@ function p_ai_add_methods($arr)
     'pwg.ai.config',
     'p_ws_ai_config',
     array(
-      'ticket_callback' => array(
-        'type' => WS_TYPE_BOOL
+      // 'ticket_callback' => array(
+      //   'type' => WS_TYPE_BOOL
+      // ),
+      'ai_url' => array(),
+      'description_prefix' => array(
+        'flags'=>WS_PARAM_OPTIONAL,
       ),
-      'description_prefix' => array(),
       'ai_api_key' => array(),
       'pwg_token' => array(),
     ),
@@ -118,9 +122,17 @@ UPDATE `'.IMAGES_TABLE.'`
   $tag_list = get_tag_ids($tags);
   set_tags($tag_list, $result['image_id']);
 
+  $query = '
+UPDATE `'.TAGS_TABLE.'`
+  SET `ai` = \'true\'
+  WHERE id IN ('.implode(',', $tag_list).')
+';
+  pwg_query($query);
+
   single_update(
     P_AI_TICKETS_TABLE,
     array(
+      'cost' => $params['cost'],
       'process_time' => $params['process_time'],
       'status' => 'completed'
     ),
@@ -142,10 +154,14 @@ function p_ws_ai_config($params)
     return new PwgError(403, l10n('Invalid security token'));
   }
 
+  $url_server_ai = rtrim($params['ai_url'], '/');
+  $prefix_desc = $params['description_prefix'] ? pwg_db_real_escape_string(strip_tags(stripslashes(trim($params['description_prefix'])))) : null;
+
   $new_conf = array(
     'api_key' => pwg_db_real_escape_string($params['ai_api_key']),
-    'ticket_callback' => $params['ticket_callback'],
-    'description_prefix' => pwg_db_real_escape_string(strip_tags(stripslashes(trim($params['description_prefix'])))),
+    'url_server_ai' => pwg_db_real_escape_string($url_server_ai),
+    'ticket_callback' => true,
+    'description_prefix' => $prefix_desc,
   );
   conf_update_param('piwigo_ai', array_merge($conf['piwigo_ai'], $new_conf), true);
   return 'Configuration saved';
