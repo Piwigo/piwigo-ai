@@ -21,8 +21,8 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
         >
         <span class="slider round"></span>
       </label>
-      <label for="send_picture_file" class="font-bold">{'ai_send_picture_file'|translate}</label>
-      <p class="text-xs">{'ai_send_picture_file_description'|translate}</p>
+      <label for="send_picture_file" class="font-bold">{'Send picture file'|translate}</label>
+      <p class="text-xs">{'Send an image file instead of the image URL.'|translate}</p>
     </div>
 
     <div class="mt-3">
@@ -32,13 +32,13 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
         >
         <span class="slider round"></span>
       </label>
-      <label for="ticket_callback" class="font-bold">{'ai_ticket_callback'|translate}</label>
-      <p class="text-xs">{'ai_ticket_callback_description'|translate}</p>
+      <label for="ticket_callback" class="font-bold">{'Ticket callback'|translate}</label>
+      <p class="text-xs">{'The AI server sends results back directly instead of polling.'|translate}</p>
     </div> *}
 
     <div class="mt-3 flex flex-col text-start">
-      <label for="description_prefix" class="font-bold">{"ai_description_prefix"|translate|escape:html}</label>
-      <p class="text-xs italic">{'ai_description_prefix_description'|translate}</p>
+      <label for="description_prefix" class="font-bold">{"Description prefix"|translate|escape:html}</label>
+      <p class="text-xs italic">{'Text prepended to AI-generated descriptions.'|translate}</p>
 
       <input class="p-ai-input" 
         id="description_prefix" name="description_prefix" type="text" 
@@ -52,8 +52,8 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
     </div>
     
     <div class="mt-4 flex flex-col text-start">
-      <label for="url_server_ai" class="font-bold">{"ai_url_server"|translate|escape:html}</label>
-      <p class="text-xs italic">{'ai_url_server_description'|translate}</p>
+      <label for="url_server_ai" class="font-bold">{"AI server URL"|translate|escape:html}</label>
+      <p class="text-xs italic">{'URL of the AI server used for processing.'|translate}</p>
 
       <input class="p-ai-input" 
         id="url_server_ai" name="url_server_ai" type="text" 
@@ -62,8 +62,8 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
     </div>
 
     <div class="mt-3 flex flex-col text-start">
-      <label for="api_key" class="font-bold">{"ai_api_key"|translate|escape:html}</label>
-      <p class="text-xs italic">{'ai_api_key_description'|translate}</p>
+      <label for="api_key" class="font-bold">{"API key"|translate|escape:html}</label>
+      <p class="text-xs italic">{'Authentication key for the AI server.'|translate}</p>
 
       <input class="p-ai-input" 
         id="api_key" name="api_key" type="text" 

@@ -16,7 +16,7 @@
               class="text-base icon-ai-token"></i></p>
           <p>{'credits left'|translate}</p>
         </div>
-        <p class="self-center text-[10px]">{'Unsed credit wont be refund'|translate}</p>
+        <p class="self-center text-[10px]">{'Unused credits wont be refund'|translate}</p>
       </div>
     </div>
 

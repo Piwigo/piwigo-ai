@@ -38,6 +38,8 @@ function p_ai_analyze($image, $callback, $send_as_file, $options = [])
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_TIMEOUT => 0,
     CURLOPT_HTTPHEADER => $headers,
+    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_SSL_VERIFYHOST => 2,
   );
 
   $post_data = array(
@@ -86,8 +88,10 @@ function p_ai_get(string $url, int $timeout = 10)
   curl_setopt($req, CURLOPT_TIMEOUT, $timeout);
   curl_setopt($req, CURLOPT_HTTPHEADER, $headers);
   curl_setopt($req, CURLOPT_USERAGENT, 'PiwigoAI');
+  curl_setopt($req, CURLOPT_SSL_VERIFYPEER, true);
+  curl_setopt($req, CURLOPT_SSL_VERIFYHOST, 2);
   $res = curl_exec($req);
-  
+
   if (false === $res)
   {
     $error = curl_error($req);
@@ -117,6 +121,8 @@ function p_ai_post(string $url, array $data, int $timeout = 10)
   curl_setopt($req, CURLOPT_USERAGENT, 'PiwigoAI');
   curl_setopt($req, CURLOPT_RETURNTRANSFER, true);
   curl_setopt($req, CURLOPT_TIMEOUT, $timeout);
+  curl_setopt($req, CURLOPT_SSL_VERIFYPEER, true);
+  curl_setopt($req, CURLOPT_SSL_VERIFYHOST, 2);
   $res = curl_exec($req);
 
   if (false === $res)
@@ -126,6 +132,56 @@ function p_ai_post(string $url, array $data, int $timeout = 10)
   }
 
   return json_decode($res, true);
+}
+
+function p_ai_submit_image(array $image_info, array $options)
+{
+  global $conf;
+
+  $abs_root = get_absolute_root_url();
+
+  $callback = null;
+  if ($conf['piwigo_ai']['ticket_callback'])
+  {
+    $callback = $abs_root . 'ws.php?format=json&method=pwg.ai.analyze';
+  }
+
+  $send_as_file = $conf['piwigo_ai']['send_picture_file'] ?? false;
+
+  if ($send_as_file)
+  {
+    $img = $image_info['path'];
+  }
+  else
+  {
+    $img = $abs_root . (new SrcImage($image_info))->rel_path;
+  }
+
+  $response = p_ai_analyze($img, $callback, $send_as_file, $options);
+
+  if (!empty($response['status']) && $response['status'] >= 400)
+  {
+    return array('errors' => $response['message'] ?? l10n('An error occurred with the Piwigo AI server'));
+  }
+
+  if (empty($response['ticket_id']))
+  {
+    return array('errors' => l10n('No ticket ID in Piwigo AI response'));
+  }
+
+  single_insert(
+    P_AI_TICKETS_TABLE,
+    array(
+      'ticket_id'    => $response['ticket_id'],
+      'image_id'     => $image_info['id'],
+      'status'       => $response['job_status'],
+      'options'      => $response['options'],
+      'cost'         => $response['cost'],
+      'use_callback' => $callback ? 'true' : 'false',
+    )
+  );
+
+  return $response;
 }
 
 function p_ai_get_tickets()

@@ -69,9 +69,55 @@ function p_ai_display_add_options()
 
 function p_ai_element_set_global_action($action, $collection)
 {
-  if ('p_ai_analyze' == $action and count($collection) > 0)
+  global $conf, $page;
+
+  if ('p_ai_analyze' != $action or count($collection) == 0)
   {
-    
+    return;
+  }
+
+  if (empty($conf['piwigo_ai']['api_key']))
+  {
+    $page['errors'][] = l10n('Piwigo AI API key is not configured');
+    return;
+  }
+
+  $options = [
+    'caption' => !empty($_POST['p_ai_caption']),
+    'tagging' => !empty($_POST['p_ai_tagging']),
+    'ocr'     => !empty($_POST['p_ai_ocr']),
+  ];
+
+  if (!$options['caption'] && !$options['tagging'] && !$options['ocr'])
+  {
+    $page['errors'][] = l10n('Please select at least one Piwigo AI option');
+    return;
+  }
+
+  $success = 0;
+
+  foreach ($collection as $image_id)
+  {
+    $image_info = get_image_infos($image_id);
+    if (empty($image_info))
+    {
+      continue;
+    }
+
+    $response = p_ai_submit_image($image_info, $options);
+
+    if (isset($response['errors']))
+    {
+      $page['errors'][] = $response['errors'];
+      break;
+    }
+
+    $success++;
+  }
+
+  if ($success > 0)
+  {
+    $page['infos'][] = l10n_dec('%d photo sent to Piwigo AI', '%d photos sent to Piwigo AI', $success);
   }
 }
 

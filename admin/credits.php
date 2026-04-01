@@ -25,7 +25,7 @@ $template->assign(array(
 
 if (!isset($result['credits']))
 {
-  $page['errors'][] = l10n('ai_missing_api_key');
+  $page['errors'][] = l10n('No API key configured or the key is invalid. Please check your settings.');
 }
 
 $template->set_filename('p_ai_admin_content', P_AI_REALPATH . '/admin/template/credits.tpl');

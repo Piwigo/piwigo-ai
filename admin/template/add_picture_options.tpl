@@ -11,19 +11,19 @@ const str_p_ai_infos_text = "{'%s photos will be analyzed by Piwigo AI'|translat
     <div class="ml-1.5 align-top">
       <p class="pb-1.5">{"Analyse photos with Piwigo AI"|@translate}</p>
       <div id="p_ai_options_content" class="flex! items-center gap-2.5 text-xs">
-        <label class="font-checkbox flex! items-center tiptip" title="{'ai_caption_description'|translate}">
+        <label class="font-checkbox flex! items-center tiptip" title="{'Automatically generate a description for each uploaded photo using AI'|translate}">
           <span class="icon-check" style="margin: 0; padding: 0; border-radius: 0; font-size: 12px;"></span>
           <input type="checkbox" name="caption" id="pAiUploadCaption" checked>
           {'Description'|translate}
         </label>
 
-        <label class="font-checkbox flex! items-center tiptip" title="{'ai_tagging_description'|translate}">
+        <label class="font-checkbox flex! items-center tiptip" title="{'Automatically assign tags to each uploaded photo using AI'|translate}">
           <span class="icon-check" style="margin: 0; padding: 0; border-radius: 0; font-size: 12px;"></span>
           <input type="checkbox" name="tags" id="pAiUploadTagging" checked>
           {'Tags'|translate}
         </label>
 
-        <label class="font-checkbox flex! items-center tiptip" title="{'ai_ocr_description'|translate}">
+        <label class="font-checkbox flex! items-center tiptip" title="{'Extract and index text found in each uploaded photo using AI'|translate}">
           <span class="icon-check" style="margin: 0; padding: 0; border-radius: 0; font-size: 12px;"></span>
           <input type="checkbox" name="ocr" id="pAiUploadOCR" checked>
           {'OCR'|translate}

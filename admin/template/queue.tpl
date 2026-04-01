@@ -71,6 +71,3 @@
 
   </main>
 </div>
-{footer_script}
-console.log({$P_AI_TICKETS|json_encode})
-{/footer_script}

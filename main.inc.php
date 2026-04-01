@@ -28,7 +28,7 @@ if (basename(dirname(__FILE__)) != 'piwigo_ai')
 // +-----------------------------------------------------------------------+
 global $prefixeTable;
 
-define('P_AI_VERSION', '0.0.1Alpha');
+define('P_AI_VERSION', '0.0.1-alpha');
 define('P_AI_ID', basename(dirname(__FILE__)));
 define('P_AI_PATH', PHPWG_PLUGINS_PATH . P_AI_ID . '/');
 define('P_AI_REALPATH', realpath(P_AI_PATH));
@@ -68,10 +68,10 @@ if (defined('IN_ADMIN'))
   // add_event_handler('loc_begin_admin_page', 'p_ai_loc_begin_admin_page', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
 
   // batch manager apply action
-  // add_event_handler('element_set_global_action', 'p_ai_element_set_global_action', 50, $admin_function);
+  add_event_handler('element_set_global_action', 'p_ai_element_set_global_action', 50, $admin_function);
 
   // batch manager display action
-  // add_event_handler('loc_begin_element_set_global', 'p_ai_element_set_global_add_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function); 
+  add_event_handler('loc_begin_element_set_global', 'p_ai_element_set_global_add_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function); 
 
   // TODO
   // Get list of tickets where callback is null and status pending
