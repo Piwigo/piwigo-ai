@@ -54,6 +54,21 @@ function p_ai_add_methods($arr)
     )
   );
 
+  $service->addMethod(
+    'pwg.ai.check_compatibility',
+    'p_ws_ai_check_compatibility',
+    array(
+      'pwg_token' => array(),
+    ),
+    'Check Piwigo AI database compatibility',
+    null,
+    array(
+      'hidden' => false,
+      'post_only' => true,
+      'admin_only' => true,
+    )
+  );
+
 }
 
 /**
@@ -76,6 +91,8 @@ SELECT *
   {
     return new PwgError(WS_ERR_INVALID_PARAM, 'Ticket not found');
   }
+
+  $is_compatible = p_ai_check_db_compatibility();
 
   $image = get_image_infos($result['image_id']);
 
@@ -104,14 +121,16 @@ SELECT *
     array('id' => $result['image_id'])
   );
 
-  if (!empty($params['embedding']))
+  // in degraded mode we ignore embedding
+  if (!empty($params['embedding']) && $is_compatible)
   {
     $decoded = json_decode($params['embedding'], true);
     if (is_array($decoded))
     {
+      $vec_fn = p_ai_is_mariadb() ? 'VEC_FromText' : 'STRING_TO_VECTOR';
       pwg_query('
 UPDATE `'.IMAGES_TABLE.'`
-  SET `embedding` = VEC_FromText(\''.pwg_db_real_escape_string($params['embedding']).'\')
+  SET `embedding` = '.$vec_fn.'(\''.pwg_db_real_escape_string($params['embedding']).'\')
   WHERE id = '.intval($result['image_id']).'
       ');
     }
@@ -173,4 +192,25 @@ function p_ws_ai_config($params)
   );
   conf_update_param('piwigo_ai', array_merge($conf['piwigo_ai'], $new_conf), true);
   return 'Configuration saved';
+}
+
+/**
+ * `WS Piwigo AI` : Check Piwigo AI database compatibility
+ */
+function p_ws_ai_check_compatibility($params)
+{
+  if (get_pwg_token() != $params['pwg_token'])
+  {
+    return new PwgError(403, l10n('Invalid security token'));
+  }
+
+  $is_compatible = p_ai_check_db_compatibility(true);
+
+  if ($is_compatible)
+  {
+    p_ai_migrate_db();
+    return true;
+  }
+
+  return false;
 }

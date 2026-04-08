@@ -29,9 +29,14 @@ class piwigo_ai_maintain extends PluginMaintain
   {
     global $conf;
 
+    include_once(PHPWG_PLUGINS_PATH . basename(dirname(__FILE__)) . '/include/functions.inc.php');
+    $is_compatible = p_ai_check_db_compatibility();
+    conf_update_param('piwigo_ai_db_compatibility', $is_compatible, true);
+    $type = $is_compatible ? 'VECTOR(512)' : 'LONGTEXT';
+
     if (empty($conf['piwigo_ai']))
     {
-      conf_update_param('piwigo_ai', $this->default_conf, true);  
+      conf_update_param('piwigo_ai', $this->default_conf, true);
     }
 
     $query = pwg_query('SHOW COLUMNS FROM `'.IMAGES_TABLE.'` LIKE "ocr";');
@@ -43,13 +48,19 @@ class piwigo_ai_maintain extends PluginMaintain
     $query = pwg_query('SHOW COLUMNS FROM `'.IMAGES_TABLE.'` LIKE "embedding";');
     if (!pwg_db_num_rows($query))
     {
-      pwg_query('ALTER TABLE `'.IMAGES_TABLE.'` ADD `embedding` VECTOR(512) NULL DEFAULT NULL;');
+      pwg_query('ALTER TABLE `'.IMAGES_TABLE.'` ADD `embedding` '. $type .' NULL DEFAULT NULL;');
     }
 
     $query = pwg_query('SHOW COLUMNS FROM `'.TAGS_TABLE.'` LIKE "ai";');
     if (!pwg_db_num_rows($query))
     {
       pwg_query('ALTER TABLE `'.TAGS_TABLE.'` ADD `ai` enum(\'true\', \'false\') NOT NULL DEFAULT \'false\'');
+    }
+
+    $query = pwg_query('SHOW COLUMNS FROM `'.TAGS_TABLE.'` LIKE "embedding";');
+    if (!pwg_db_num_rows($query))
+    {
+      pwg_query('ALTER TABLE `'.TAGS_TABLE.'` ADD `embedding` '. $type .' NULL DEFAULT NULL;');
     }
 
     pwg_query('
@@ -97,10 +108,13 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
   function uninstall()
   {
     pwg_query('DROP TABLE IF EXISTS `'. $this->table .'`;');
-    pwg_query('ALTER TABLE `'. IMAGES_TABLE .'` DROP COLUMN IF EXISTS `ocr`;');
-    pwg_query('ALTER TABLE `'. IMAGES_TABLE .'` DROP INDEX IF EXISTS `embedding`, DROP COLUMN IF EXISTS `embedding`;');
-    pwg_query('ALTER TABLE `'. TAGS_TABLE .'` DROP COLUMN IF EXISTS `ai`;');
+    pwg_query('ALTER TABLE `'. IMAGES_TABLE .'` DROP COLUMN `ocr`;');
+    pwg_query('ALTER TABLE `'. IMAGES_TABLE .'` DROP COLUMN `embedding`;');
+    pwg_query('ALTER TABLE `'. TAGS_TABLE .'` DROP COLUMN `ai`;');
+    pwg_query('ALTER TABLE `'. TAGS_TABLE .'` DROP COLUMN `embedding`;');
+
     conf_delete_param('piwigo_ai');
+    conf_delete_param('piwigo_ai_db_compatibility');
   }
 
 }

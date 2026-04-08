@@ -31,7 +31,7 @@ function p_ai_analyze($image, $callback, $send_as_file, $options = [])
 
   $curl = curl_init($conf['piwigo_ai']['url_server_ai'] . '/analyze');
   $headers = array();
-  $headers[] = 'X-API-KEY: ' . $conf['piwigo_ai']['api_key'] ?? 'no-api-key';
+  $headers[] = 'X-API-KEY: ' . ($conf['piwigo_ai']['api_key'] ?? 'no-api-key');
   $curl_options = array(
     CURLOPT_POST => true,
     CURLOPT_USERAGENT => 'PiwigoAI Plugin',
@@ -193,4 +193,60 @@ SELECT t.*, i.file, i.name
   ORDER BY t.created_at DESC
 ;';
   return query2array($query);
+}
+
+function p_ai_check_db_compatibility($force = false)
+{
+  $is_compatible = conf_get_param('piwigo_ai_db_compatibility', null);
+
+  // if we have already checked the compatibility return the stored data
+  if (!is_null($is_compatible) && !$force)
+  {
+    return $is_compatible;
+  }
+
+  $db_version =  pwg_get_db_version();
+  $version = p_ai_parse_db_version($db_version);
+  $is_mariadb = p_ai_is_mariadb($db_version);
+
+  if ($is_mariadb) {
+    $is_compatible = version_compare($version, '11.7.0', '>=');
+  }
+  else
+  {
+    $is_compatible =  version_compare($version, '9.0.0', '>=');
+  }
+
+  conf_update_param('piwigo_ai_db_compatibility', $is_compatible, true);
+  return $is_compatible;
+}
+
+function p_ai_is_mariadb($db_version = null)
+{
+  return stripos($db_version ?? pwg_get_db_version(), 'MariaDB') !== false;
+}
+
+function p_ai_parse_db_version($db_version)
+{
+  // legacy compatibility prefix sometimes seen on some environments
+  $parsed_db_version = preg_replace('/^5\.5\.5-/', '', $db_version);
+  preg_match('/^(\d+\.\d+\.\d+)/', $parsed_db_version, $matches);
+  return $matches[1] ?? '0.0.0';
+}
+
+function p_ai_migrate_db()
+{
+  if (!p_ai_check_db_compatibility(true)) return;
+  
+  $query = pwg_query('SHOW COLUMNS FROM `'.IMAGES_TABLE.'` LIKE "embedding";');
+  if (pwg_db_num_rows($query))
+  {
+    pwg_query('ALTER TABLE `'.IMAGES_TABLE.'` MODIFY `embedding` VECTOR(512) NULL DEFAULT NULL;');
+  }
+
+  $query = pwg_query('SHOW COLUMNS FROM `'.TAGS_TABLE.'` LIKE "embedding";');
+  if (pwg_db_num_rows($query))
+  {
+    pwg_query('ALTER TABLE `'.TAGS_TABLE.'` MODIFY `embedding` VECTOR(512) NULL DEFAULT NULL;');
+  }
 }
