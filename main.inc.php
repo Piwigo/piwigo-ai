@@ -44,7 +44,10 @@ if (!$is_valid_account)
 {
   global $page;
   
-  if (!isset($_GET['page']) || !str_contains($_GET['page'], 'plugin-LocalFilesEditor'))
+  // we show the beta message only in admin and when we are not in localFilesEditor config page
+  if (defined('IN_ADMIN') 
+    && (!isset($_GET['page']) || strpos($_GET['page'], 'plugin-LocalFilesEditor') === false)
+  )
   {
     $page['errors'][] = l10n('Piwigo AI is currently in beta. To get access, please submit a request at <a href="%s" target="_blank">this link</a>.', 'https://piwigo.org/contact?type=beta%20testing');
   }
