@@ -78,6 +78,13 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
   PRIMARY KEY (`ticket_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ;');
+
+    // MIGRATIONS
+    $query = pwg_query('SHOW COLUMNS FROM `'.$this->table.'` LIKE "failed_message";');
+    if (!pwg_db_num_rows($query))
+    {
+      pwg_query('ALTER TABLE `'.$this->table.'` ADD `failed_message` TEXT NULL DEFAULT NULL;');
+    }
   }
 
   /**

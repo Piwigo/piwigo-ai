@@ -1,3 +1,6 @@
+{combine_script id='jquery.jgrowl' load='footer' require='jquery' path='themes/default/js/plugins/jquery.jgrowl_minimized.js'}
+{combine_css path="themes/default/js/plugins/jquery.jgrowl.css"}
+
 {combine_script id='p_ai_script_add_picture_options' load='footer' path="{$P_AI_PATH}admin/js/add_picture_options.js"}
 {footer_script}
 const str_p_ai_infos_text = "{'%s photos will be analyzed by Piwigo AI'|translate|escape:javascript}";

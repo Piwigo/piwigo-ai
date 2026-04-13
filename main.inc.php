@@ -67,16 +67,11 @@ if (defined('IN_ADMIN'))
   $admin_function = P_AI_PATH.'include/admin_functions.inc.php';
   add_event_handler('loc_begin_admin_page', 'p_ai_loc_begin_admin_page_load_tw', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
   add_event_handler('loc_end_admin', 'p_ai_loc_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
-  // add_event_handler('loc_begin_admin_page', 'p_ai_loc_begin_admin_page', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
+  add_event_handler('loc_begin_admin', 'p_ai_begin_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
 
   // batch manager apply action
   add_event_handler('element_set_global_action', 'p_ai_element_set_global_action', 50, $admin_function);
 
   // batch manager display action
   add_event_handler('loc_begin_element_set_global', 'p_ai_element_set_global_add_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function); 
-
-  // TODO
-  // Get list of tickets where callback is null and status pending
-  // Try to retrieves data of tickets
-  // If data was retrieves save into db
 }

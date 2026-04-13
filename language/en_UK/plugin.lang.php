@@ -44,3 +44,4 @@ $lang['%d photos sent to Piwigo AI'] = '%d photos sent to Piwigo AI';
 $lang['No ticket ID in Piwigo AI response'] = 'No ticket ID in Piwigo AI response';
 $lang['An error occurred with the Piwigo AI server'] = 'An error occurred with the Piwigo AI server';
 $lang['<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.7+ or MySQL 9+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>'] = '<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.7+ or MySQL 9+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>';
+$lang['Image file not found'] = 'Image file not found';

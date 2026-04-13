@@ -13,11 +13,10 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
       <span class="font-bold text-sm p-1.25">{'General'|translate}</span>
     </p>
 
-    {* <div class="mt-4">
+    <div class="mt-4">
       <label class="switch">
         <input type="checkbox" name="send_picture_file" id="send_picture_file"
           {if $P_AI_CONFIG.send_picture_file} checked {/if}
-         disabled
         >
         <span class="slider round"></span>
       </label>
@@ -27,14 +26,14 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
 
     <div class="mt-3">
       <label class="switch">
-        <input type="checkbox" name="ticket_callback" id="ticket_callback" disabled
+        <input type="checkbox" name="ticket_callback" id="ticket_callback"
           {if $P_AI_CONFIG.ticket_callback} checked {/if}
         >
         <span class="slider round"></span>
       </label>
       <label for="ticket_callback" class="font-bold">{'Ticket callback'|translate}</label>
       <p class="text-xs">{'The AI server sends results back directly instead of polling.'|translate}</p>
-    </div> *}
+    </div>
 
     <div class="mt-3 flex flex-col text-start">
       <label for="description_prefix" class="font-bold">{"Description prefix"|translate|escape:html}</label>

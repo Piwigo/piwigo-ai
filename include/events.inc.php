@@ -6,7 +6,7 @@ if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
  */
 function p_ai_loc_end_add_uploaded_file($image_info)
 {
-  global $conf;
+  global $conf, $template, $page;
 
   if (empty($conf[ 'piwigo_ai' ][ 'api_key' ])) return;
 
@@ -20,4 +20,6 @@ function p_ai_loc_end_add_uploaded_file($image_info)
   ];
 
   p_ai_submit_image($image_info, $options);
+  // TODO: found a way to pass some infos during upload
+  // for example to show a toaster when an error occured from the AI server
 }

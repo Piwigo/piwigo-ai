@@ -17,18 +17,52 @@ function p_ai_loc_end_admin()
   p_ai_display_menu();
 
   switch ($page['page'])
-    {
-        case 'photo':
-          p_ai_display_photo();
-          break;
+  {
+    case 'photo':
+      p_ai_display_photo();
+      break;
+    
+    case 'photos_add':
+      p_ai_display_add_options();
+      break;
 
-        case 'photos_add':
-          p_ai_display_add_options();
-          break;
+    default:
+      break;
+  }
+}
 
-        default:
-          break;
-    }
+function p_ai_begin_end_admin()
+{
+  global $template;
+
+  $tickets_lastcheck = pwg_get_session_var('p_ai_tickets_lastcheck', 0);
+
+  if ($tickets_lastcheck != 0 && time() - $tickets_lastcheck < 5)
+  {
+    return;
+  }
+
+  $query = '
+SELECT * 
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE 
+    use_callback = \'false\'
+  AND 
+    status = \'pending\'
+  LIMIT 1
+;';
+
+  $tickets = pwg_db_fetch_assoc(pwg_query($query));
+  pwg_set_session_var('p_ai_tickets_lastcheck', time());
+
+  if (!$tickets) return;
+
+  $template->block_footer_script(null, 'const p_ai_ct_token = "'.get_pwg_token().'";');
+  $template->func_combine_script(array(
+		"id" => "p_ai_check_tickets",
+		"load" => "footer",
+		"path" => P_AI_PATH.'/admin/js/check_tickets.js'
+	));
 }
 
 function p_ai_display_photo()

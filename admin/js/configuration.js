@@ -20,6 +20,7 @@ function p_show_error() {
 
 function p_ai_save() {
   p_ai_saving = true;
+  const send_picture_file = $('#send_picture_file').prop('checked');
   const ticket_callback = $('#ticket_callback').prop('checked');
   const description_prefix = $('#description_prefix').val();
   const ai_api_key = $('#api_key').val();
@@ -33,7 +34,9 @@ function p_ai_save() {
       pwg_token: PWG_TOKEN,
       ai_api_key,
       ai_url,
-      description_prefix
+      description_prefix,
+      send_picture_file,
+      ticket_callback,
     },
     success: function(res) {
       p_show_success();
