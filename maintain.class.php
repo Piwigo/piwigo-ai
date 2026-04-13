@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
    */
   function deactivate()
   {
+    conf_delete_param('piwigo_ai_outdated');
   }
 
   /**
@@ -106,6 +107,12 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
    */
   function update($old_version, $new_version, &$errors = array())
   {
+    // reset p_ai_outdated only on real version change (avoid auto->auto on every admin page load)
+    if ($old_version !== $new_version)
+    {
+      conf_delete_param('piwigo_ai_outdated');
+    }
+
     $this->install($new_version, $errors);
   }
 
@@ -122,6 +129,7 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
 
     conf_delete_param('piwigo_ai');
     conf_delete_param('piwigo_ai_db_compatibility');
+    conf_delete_param('piwigo_ai_outdated');
   }
 
 }

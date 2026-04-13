@@ -28,6 +28,7 @@ if (basename(dirname(__FILE__)) != 'piwigo_ai')
 // +-----------------------------------------------------------------------+
 global $prefixeTable;
 
+define('P_AI_VERSION', '0.0.3beta');
 define('P_AI_ID', basename(dirname(__FILE__)));
 define('P_AI_PATH', PHPWG_PLUGINS_PATH . P_AI_ID . '/');
 define('P_AI_REALPATH', realpath(P_AI_PATH));
@@ -50,6 +51,22 @@ if (!$is_valid_account)
   )
   {
     $page['errors'][] = l10n('Piwigo AI is currently in beta. To get access, please submit a request at <a href="%s" target="_blank">this link</a>.', 'https://piwigo.org/contact?type=beta%20testing');
+  }
+  return;
+}
+
+$is_plugin_outdated = conf_get_param('piwigo_ai_outdated', false);
+if ($is_plugin_outdated)
+{
+  if (defined('IN_ADMIN'))
+  {
+    add_event_handler('init', 'p_ai_outdated_error');
+    function p_ai_outdated_error()
+    {
+      global $page;
+      load_language('plugin.lang', P_AI_PATH);
+      $page['errors'][] = l10n('Piwigo AI is outdated, please update the plugin. (If you have updated the plugin but the message persists, deactivate and reactivate the plugin.)');
+    }
   }
   return;
 }

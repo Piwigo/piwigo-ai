@@ -1,6 +1,16 @@
 <?php
 if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
 
+function p_ai_decode_response($res)
+{
+  $decoded = json_decode($res, true);
+  if (is_array($decoded) && ($decoded['status'] ?? null) === 426)
+  {
+    conf_update_param('piwigo_ai_outdated', true, true);
+  }
+  return $decoded;
+}
+
 function p_ai_init()
 {
   global $conf, $template;
@@ -32,6 +42,7 @@ function p_ai_analyze($image, $callback, $send_as_file, $options = [])
   $curl = curl_init($conf['piwigo_ai']['url_server_ai'] . '/analyze');
   $headers = array();
   $headers[] = 'X-API-KEY: ' . ($conf['piwigo_ai']['api_key'] ?? 'no-api-key');
+  $headers[] = 'X-PLUGIN-VERSION: '.P_AI_VERSION;
   $curl_options = array(
     CURLOPT_POST => true,
     CURLOPT_USERAGENT => 'PiwigoAI Plugin',
@@ -71,13 +82,15 @@ function p_ai_analyze($image, $callback, $send_as_file, $options = [])
     // https://php.net/manual/en/function.curl-close.php
     curl_close($curl);
   }
-  return json_decode($response, true);
+  return p_ai_decode_response($response);
 }
 
 function p_ai_get(string $url, int $timeout = 10)
 {
   global $conf;
-  $headers = array();
+  $headers = array(
+    'X-PLUGIN-VERSION: '.P_AI_VERSION,
+  );
 
   if (!empty($conf['piwigo_ai']['api_key']))
   {
@@ -92,14 +105,19 @@ function p_ai_get(string $url, int $timeout = 10)
   curl_setopt($req, CURLOPT_SSL_VERIFYPEER, true);
   curl_setopt($req, CURLOPT_SSL_VERIFYHOST, 2);
   $res = curl_exec($req);
+  $error = false === $res ? curl_error($req) : null;
+
+  if (version_compare(PHP_VERSION, '8', '<'))
+  {
+    curl_close($req);
+  }
 
   if (false === $res)
   {
-    $error = curl_error($req);
     throw new \Exception("cURL error: {$error}");
   }
 
-  return json_decode($res, true);
+  return p_ai_decode_response($res);
 }
 
 function p_ai_post(string $url, array $data, int $timeout = 10)
@@ -107,7 +125,8 @@ function p_ai_post(string $url, array $data, int $timeout = 10)
   global $conf;
 
   $headers = array(
-    'Content-Type: application/json'
+    'Content-Type: application/json',
+    'X-PLUGIN-VERSION: '.P_AI_VERSION,
   );
 
   if (!empty($conf['piwigo_ai']['api_key']))
@@ -125,14 +144,19 @@ function p_ai_post(string $url, array $data, int $timeout = 10)
   curl_setopt($req, CURLOPT_SSL_VERIFYPEER, true);
   curl_setopt($req, CURLOPT_SSL_VERIFYHOST, 2);
   $res = curl_exec($req);
+  $error = false === $res ? curl_error($req) : null;
+
+  if (version_compare(PHP_VERSION, '8', '<'))
+  {
+    curl_close($req);
+  }
 
   if (false === $res)
   {
-    $error = curl_error($req);
     throw new \Exception("cURL error: {$error}");
   }
 
-  return json_decode($res, true);
+  return p_ai_decode_response($res);
 }
 
 function p_ai_submit_image(array $image_info, array $options)
