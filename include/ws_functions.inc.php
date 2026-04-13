@@ -84,7 +84,7 @@ function p_ai_add_methods($arr)
     'Check Piwigo AI tickets available for callback',
     null,
     array(
-      'hidden' => false,
+      'hidden' => true,
       'post_only' => true,
       'admin_only' => true,
     )
