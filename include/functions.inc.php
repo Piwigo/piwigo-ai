@@ -228,7 +228,6 @@ function p_ai_save_ticket($data)
 {
   global $conf, $logger;
 
-  error_log('[p_ai_save_ticket] ocr raw: ' . print_r($data['ocr'], true));
   $query = '
 SELECT *
   FROM '.P_AI_TICKETS_TABLE.'

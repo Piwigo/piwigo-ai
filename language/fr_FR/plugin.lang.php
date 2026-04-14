@@ -36,7 +36,7 @@ $lang['Failed'] = 'Échoué';
 $lang['Pending'] = 'En attente';
 $lang['Analyse photos with Piwigo AI'] = 'Analyser les photos avec Piwigo AI';
 $lang['%s photos will be analyzed by Piwigo AI'] = '%s photos seront analysées par Piwigo AI';
-$lang['Piwigo AI is currently in beta. To get access, please submit a request at <a href="%s" target="_blank">this link</a>.'] = 'Piwigo AI est actuellement en bêta. Pour y accéder, veuillez soumettre une demande à <a href="%s">ce lien</a>.';
+$lang['Piwigo AI is currently in beta. To get access, please submit a request at <a href="%s" target="_blank">this link</a>.'] = 'Piwigo AI est actuellement en bêta. Pour y accéder, veuillez soumettre une demande sur <a href="%s">ce formulaire</a>.';
 $lang['Piwigo AI API key is not configured'] = 'La clé API Piwigo AI n\'est pas configurée';
 $lang['Please select at least one Piwigo AI option'] = 'Veuillez sélectionner au moins une option Piwigo AI';
 $lang['%d photo sent to Piwigo AI'] = '%d photo envoyée à Piwigo AI';

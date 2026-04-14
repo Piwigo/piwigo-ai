@@ -36,21 +36,22 @@ define('P_AI_ADMIN', get_root_url() . 'admin.php?page=plugin-' . P_AI_ID);
 define('P_AI_TICKETS_TABLE',   $prefixeTable . 'ai_tickets');
 
 // +-----------------------------------------------------------------------+
-// | Init Example Plugin                                                   |
+// | Init Piwigo AI Plugin                                                   |
 // +-----------------------------------------------------------------------+
 
 include_once(P_AI_PATH . 'include/functions.inc.php');
 $is_valid_account = p_ai_check_account();
 if (!$is_valid_account)
 {
-  global $page;
-  
-  // we show the beta message only in admin and when we are not in localFilesEditor config page
-  if (defined('IN_ADMIN') 
-    && (!isset($_GET['page']) || strpos($_GET['page'], 'plugin-LocalFilesEditor') === false)
-  )
+  if (defined('IN_ADMIN'))
   {
-    $page['errors'][] = l10n('Piwigo AI is currently in beta. To get access, please submit a request at <a href="%s" target="_blank">this link</a>.', 'https://piwigo.org/contact?type=beta%20testing');
+    add_event_handler('init', 'p_ai_invalid_account');
+    function p_ai_invalid_account()
+    {
+      global $page;
+      load_language('plugin.lang', P_AI_PATH);
+      $page['errors'][] = l10n('Piwigo AI is currently in beta. To get access, please submit a request at <a href="%s" target="_blank">this link</a>.', 'https://piwigo.org/contact?type=beta%20testing');
+    }
   }
   return;
 }
@@ -87,8 +88,7 @@ if (defined('IN_ADMIN'))
   add_event_handler('loc_begin_admin', 'p_ai_begin_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
 
   // batch manager apply action
-  add_event_handler('element_set_global_action', 'p_ai_element_set_global_action', 50, $admin_function);
-
+  add_event_handler('element_set_global_action', 'p_ai_element_set_global_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
   // batch manager display action
   add_event_handler('loc_begin_element_set_global', 'p_ai_element_set_global_add_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function); 
 }
