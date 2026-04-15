@@ -309,7 +309,7 @@ UPDATE `'.IMAGES_TABLE.'`
     }
 
     $tag_list = get_tag_ids($tags);
-    set_tags($tag_list, $result['image_id']);
+    add_tags($tag_list, array($result['image_id']));
 
     $query = '
 UPDATE `'.TAGS_TABLE.'`
