@@ -2,20 +2,20 @@
   <h2>{'PiwigoAI'|translate}</h2>
 </div>
 
-<div class="piwigoai m-5 pb-16">
+<div class="piwigoai m-5 pb-16 dark:text-[#a1a1a1]!">
   <main>
 
-    <div class="grid grid-cols-[2fr_2.5fr_1fr_2fr_1fr] text-start mb-2">
-      <p class="text-gray-400 font-bold text-sm">{'Photo'|translate}</p>
-      <p class="text-gray-400 font-bold text-sm">{'Actions'|translate}</p>
-      <p class="text-gray-400 font-bold text-sm">{'Credits'|translate}</p>
-      <p class="text-gray-400 font-bold text-sm">{'Started'|translate}</p>
-      <p class="text-gray-400 font-bold text-sm">{'Status'|translate}</p>
+    <div class="grid grid-cols-[2fr_2.5fr_1fr_2fr_1fr] text-start mb-2 text-gray-400 dark:text-[#9e9e9e]">
+      <p class="font-bold text-sm">{'Photo'|translate}</p>
+      <p class="font-bold text-sm">{'Actions'|translate}</p>
+      <p class="font-bold text-sm">{'Credits'|translate}</p>
+      <p class="font-bold text-sm">{'Started'|translate}</p>
+      <p class="font-bold text-sm">{'Status'|translate}</p>
     </div>
 
     {foreach from=$P_AI_TICKETS item=ticket}
       {assign var="opts" value=$ticket.options|json_decode:true}
-      <div class="grid grid-cols-[2fr_2.5fr_1fr_2fr_1fr] items-center min-h-10 mb-2.5 bg-[#fafafa] shadow-sm text-start">
+      <div class="grid grid-cols-[2fr_2.5fr_1fr_2fr_1fr] items-center min-h-10 mb-2.5 shadow-sm text-start bg-[#fafafa] dark:bg-[#333] dark:text-[#a1a1a1]">
 
         <div class="overflow-hidden text-ellipsis whitespace-nowrap mr-2 pl-2">
           <span class="icon-picture mr-1"></span>
@@ -27,13 +27,13 @@
         <div class="flex items-center gap-1.5 flex-wrap px-2">
           <i class="icon-robot-head"></i>
           {if $opts.caption}
-            <span class="inline-flex items-center bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-medium">{'Description'|translate}</span>
+            <span class="p-ai-line-actions">{'Description'|translate}</span>
           {/if}
           {if $opts.ocr}
-            <span class="inline-flex items-center bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-medium">OCR</span>
+            <span class="p-ai-line-actions">OCR</span>
           {/if}
           {if $opts.tagging}
-            <span class="inline-flex items-center bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-medium">{'Tags'|translate}</span>
+            <span class="p-ai-line-actions">{'Tags'|translate}</span>
           {/if}
         </div>
 
@@ -50,15 +50,15 @@
 
         <div class="px-2.5">
           {if $ticket.status == 'completed'}
-            <span class="inline-flex items-center gap-1 bg-green-100 text-green-600 text-xs px-2 py-1 rounded font-medium">
+            <span class="inline-flex items-center gap-1 p-ai-success text-xs px-2 py-1 rounded font-medium">
               <i class="icon-ok"></i> {'Completed'|translate}
             </span>
           {elseif $ticket.status == 'failed'}
-            <span class="inline-flex items-center gap-1 bg-red-100 text-red-500 text-xs px-2 py-1 rounded font-medium">
+            <span class="inline-flex items-center gap-1 p-ai-error ext-xs px-2 py-1 rounded font-medium">
               <i class="icon-cancel"></i> {'Failed'|translate}
             </span>
           {else}
-            <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded italic">
+            <span class="inline-flex items-center gap-1 p-ai-waiting text-xs px-2 py-1 rounded italic">
               <i class="icon-clock"></i> {'Pending'|translate}
             </span>
           {/if}

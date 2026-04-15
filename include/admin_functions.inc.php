@@ -4,8 +4,27 @@ if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
 function p_ai_loc_begin_admin_page_load_tw()
 {
   global $template;
+  $themeconf = $template->get_template_vars('themeconf');
+  if ('dark' == $themeconf['colorscheme'])
+  {
+    // put tailwind in darkmode
+    add_event_handler('loc_begin_page_header', 'p_ai_setprefilter_admins');
+  }
   $template->func_combine_css(array('path' => P_AI_PATH.'/css/output.css'));
   $template->func_combine_css(array('path' => P_AI_PATH.'/vendor/fontello/css/fontello.css'));
+}
+
+function p_ai_setprefilter_admins()
+{
+  global $template;
+  $template->set_prefilter('header', 'p_ai_prefilter_admin');
+}
+
+function p_ai_prefilter_admin($content)
+{
+  $search = '<html lang="{$lang_info.code}" dir="{$lang_info.direction}">';
+  $replace = '<html lang="{$lang_info.code}" dir="{$lang_info.direction}" data-theme="dark">';
+  return str_replace($search, $replace, $content);
 }
 
 function p_ai_loc_end_admin()

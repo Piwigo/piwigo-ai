@@ -6,11 +6,11 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
   <h2>{'PiwigoAI'|translate}</h2>
 </div>
 
-<div class="piwigoai m-5 pb-16">
+<div class="piwigoai m-5 pb-16 dark:text-[#a1a1a1]!">
   <div class="flex flex-col items-start text-start">
     <p>
       <span class="p-1.25 rounded-full icon-cog-alt icon-green"></span>
-      <span class="font-bold text-sm p-1.25">{'General'|translate}</span>
+      <span class="font-bold text-sm p-1.25 dark:text-[#c1c1c1]">{'General'|translate}</span>
     </p>
 
     <div class="mt-4">
@@ -47,7 +47,7 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
 
     <div class="mt-5">
       <span class="p-1.25 rounded-full icon-robot-head icon-blue"></span>
-      <span class="font-bold text-sm p-1.25">{'Server AI'|translate}</span>
+      <span class="font-bold text-sm p-1.25 dark:text-[#c1c1c1]">{'Server AI'|translate}</span>
     </div>
     
     <div class="mt-4 flex flex-col text-start">
