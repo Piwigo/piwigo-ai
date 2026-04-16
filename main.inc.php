@@ -28,7 +28,7 @@ if (basename(dirname(__FILE__)) != 'piwigo_ai')
 // +-----------------------------------------------------------------------+
 global $prefixeTable;
 
-define('P_AI_VERSION', '0.0.3beta');
+define('P_AI_VERSION', '0.0.4beta');
 define('P_AI_ID', basename(dirname(__FILE__)));
 define('P_AI_PATH', PHPWG_PLUGINS_PATH . P_AI_ID . '/');
 define('P_AI_REALPATH', realpath(P_AI_PATH));
