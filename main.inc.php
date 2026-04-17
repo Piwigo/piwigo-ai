@@ -82,13 +82,14 @@ add_event_handler('loc_end_add_uploaded_file', 'p_ai_loc_end_add_uploaded_file',
 
 if (defined('IN_ADMIN'))
 {
-  $admin_function = P_AI_PATH.'include/admin_functions.inc.php';
-  add_event_handler('loc_begin_admin_page', 'p_ai_loc_begin_admin_page_load_tw', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
-  add_event_handler('loc_end_admin', 'p_ai_loc_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
-  add_event_handler('loc_begin_admin', 'p_ai_begin_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
+  include_once(P_AI_PATH . 'include/admin_functions.inc.php');
+  $events_admin = P_AI_PATH.'include/events_admin.inc.php';
+  add_event_handler('loc_begin_admin_page', 'p_ai_loc_begin_admin_page_load_tw', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_admin);
+  add_event_handler('loc_end_admin', 'p_ai_loc_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_admin);
+  add_event_handler('loc_begin_admin', 'p_ai_begin_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_admin);
 
   // batch manager apply action
-  add_event_handler('element_set_global_action', 'p_ai_element_set_global_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function);
+  add_event_handler('element_set_global_action', 'p_ai_element_set_global_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_admin);
   // batch manager display action
-  add_event_handler('loc_begin_element_set_global', 'p_ai_element_set_global_add_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $admin_function); 
+  add_event_handler('loc_begin_element_set_global', 'p_ai_element_set_global_add_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_admin); 
 }
