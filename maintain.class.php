@@ -5,8 +5,7 @@ class piwigo_ai_maintain extends PluginMaintain
 {
   private $table;
   private $default_conf = array(
-    'send_picture_file' => false,
-    'ticket_callback' => true,
+    'is_accessible' => false,
     'description_prefix' => null,
     'url_server_ai' => 'https://ai.piwigo.net',
     'account_id' => null,
@@ -36,7 +35,26 @@ class piwigo_ai_maintain extends PluginMaintain
 
     if (empty($conf['piwigo_ai']))
     {
+      // $conf new install
       conf_update_param('piwigo_ai', $this->default_conf, true);
+    }
+    else
+    {
+      // $conf migration
+      $conf['piwigo_ai'] = safe_unserialize($conf['piwigo_ai']);
+
+      // 0.0.3beta => 0.0.4beta
+      // change send_picture_file && ticket_callback to is_accessible
+      if (isset($conf['piwigo_ai']['send_picture_file']) 
+        || isset($conf['piwigo_ai']['ticket_callback']))
+      {
+        unset($conf['piwigo_ai']['send_picture_file'],
+        $conf['piwigo_ai']['ticket_callback']);
+        $conf['piwigo_ai']['is_accessible'] = false;
+        conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
+
+        p_ai_ping($this->default_conf);
+      }
     }
 
     $query = pwg_query('SHOW COLUMNS FROM `'.IMAGES_TABLE.'` LIKE "ocr";');
@@ -75,11 +93,13 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `completed_at` TIMESTAMP NULL,
   `failed_at` TIMESTAMP NULL,
+  `failed_message` TEXT NULL DEFAULT NULL,
   PRIMARY KEY (`ticket_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ;');
 
     // MIGRATIONS
+    // 0.0.3beta => 0.0.4beta
     $query = pwg_query('SHOW COLUMNS FROM `'.$this->table.'` LIKE "failed_message";');
     if (!pwg_db_num_rows($query))
     {
@@ -92,6 +112,12 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
    */
   function activate($plugin_version, &$errors = array())
   {
+    include_once(PHPWG_PLUGINS_PATH . basename(dirname(__FILE__)) . '/include/functions.inc.php');
+    $ping = p_ai_ping($this->default_conf);
+    if (!$ping)
+    {
+      $errors = l10n('Unable to connect to the Piwigo AI server');
+    }
   }
 
   /**

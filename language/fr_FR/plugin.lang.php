@@ -9,6 +9,10 @@ $lang['Send picture file'] = 'Envoyer le fichier image';
 $lang['Send an image file instead of the image URL.'] = 'Envoyer un fichier image au lieu de l\'URL de l\'image.';
 $lang['Ticket callback'] = 'Retour automatique des résultats';
 $lang['The AI server sends results back directly instead of polling.'] = 'Le serveur IA renvoie directement les résultats au lieu d\'utiliser un système de consultation périodique.';
+$lang['Piwigo reachable from AI server'] = 'Piwigo joignable par le serveur IA';
+$lang['Enable if the AI server can reach your Piwigo over the network.'] = 'Activez si le serveur IA peut joindre votre Piwigo via internet.';
+$lang['Enabled: the AI server fetches images by URL and pushes results back via callback (faster, less bandwidth, requires a publicly reachable Piwigo).'] = 'Activé : le serveur IA récupère les images par URL et renvoie les résultats directement (plus rapide, moins de bande passante, nécessite un Piwigo accessible publiquement).';
+$lang['Disabled: Piwigo uploads image files and polls the AI server for results (works on local or private installations).'] = 'Désactivé : Piwigo envoie les fichiers image et interroge le serveur IA pour récupérer les résultats (compatible avec les installations locales ou privées).';
 $lang['Description prefix'] = 'Préfixe de description';
 $lang['Text prepended to AI-generated descriptions.'] = 'Texte ajouté au début des descriptions générées par l\'IA.';
 $lang['AI server URL'] = 'URL du serveur IA';
@@ -46,3 +50,4 @@ $lang['An error occurred with the Piwigo AI server'] = 'Une erreur est survenue 
 $lang['<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.7+ or MySQL 9+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>'] = '<div>Piwigo AI fonctionne en mode dégradé car votre version de base de données (%s) est inférieure à la version requise (MariaDB 11.7+ ou MySQL 9+). Certaines fonctionnalités ne sont pas disponibles. <a id="p_ai_check_compatibility" href="#">Revérifier la compatibilité</a></div>';
 $lang['Image file not found'] = 'Fichier image introuvable';
 $lang['Piwigo AI is outdated, please update the plugin. (If you have updated the plugin but the message persists, deactivate and reactivate the plugin.)'] = 'Piwigo AI est obsolète, veuillez mettre à jour le plugin. (Si vous avez déjà mis à jour le plugin mais que le message persiste, désactivez puis réactivez le plugin.)';
+$lang['Unable to connect to the Piwigo AI server'] = 'Impossible de se connecter au serveur Piwigo AI';

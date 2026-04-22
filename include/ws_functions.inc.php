@@ -38,10 +38,7 @@ function p_ai_add_methods($arr)
     'pwg.ai.config',
     'p_ws_ai_config',
     array(
-      'ticket_callback' => array(
-        'type' => WS_TYPE_BOOL
-      ),
-      'send_picture_file' => array(
+      'is_accessible' => array(
         'type' => WS_TYPE_BOOL
       ),
       'ai_url' => array(),
@@ -130,8 +127,7 @@ function p_ws_ai_config($params)
   $new_conf = array(
     'api_key' => pwg_db_real_escape_string($params['ai_api_key']),
     'url_server_ai' => pwg_db_real_escape_string($url_server_ai),
-    'ticket_callback' => pwg_db_real_escape_string($params['ticket_callback']) == 1 ? true : false,
-    'send_picture_file' => pwg_db_real_escape_string($params['send_picture_file']) == 1 ? true : false,
+    'is_accessible' => pwg_db_real_escape_string($params['is_accessible']) == 1 ? true : false,
     'description_prefix' => $prefix_desc,
   );
   conf_update_param('piwigo_ai', array_merge($conf['piwigo_ai'], $new_conf), true);
@@ -197,7 +193,7 @@ SELECT *
     {
       $result = p_ai_get('/analyze/'.$tickets[$i]['ticket_id']);
 
-      if (isset($result['ticket_status']))
+      if (isset($result['errors']) || isset($result['ticket_status']))
       {
         continue;
       }

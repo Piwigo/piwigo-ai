@@ -15,24 +15,16 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
 
     <div class="mt-4">
       <label class="switch">
-        <input type="checkbox" name="send_picture_file" id="send_picture_file"
-          {if $P_AI_CONFIG.send_picture_file} checked {/if}
+        <input type="checkbox" name="is_accessible" id="is_accessible"
+          {if $P_AI_CONFIG.is_accessible} checked {/if}
         >
         <span class="slider round"></span>
       </label>
-      <label for="send_picture_file" class="font-bold">{'Send picture file'|translate}</label>
-      <p class="text-xs">{'Send an image file instead of the image URL.'|translate}</p>
-    </div>
-
-    <div class="mt-3">
-      <label class="switch">
-        <input type="checkbox" name="ticket_callback" id="ticket_callback"
-          {if $P_AI_CONFIG.ticket_callback} checked {/if}
-        >
-        <span class="slider round"></span>
+      <label for="is_accessible" class="font-bold">
+        {'Piwigo reachable from AI server'|translate}
+        <span class="icon-help-circled tiptip" style="cursor:help" title="{'Enabled: the AI server fetches images by URL and pushes results back via callback (faster, less bandwidth, requires a publicly reachable Piwigo).'|translate}<br /><br />{'Disabled: Piwigo uploads image files and polls the AI server for results (works on local or private installations).'|translate}"></span>
       </label>
-      <label for="ticket_callback" class="font-bold">{'Ticket callback'|translate}</label>
-      <p class="text-xs">{'The AI server sends results back directly instead of polling.'|translate}</p>
+      <p class="text-xs">{'Enable if the AI server can reach your Piwigo over the network.'|translate}</p>
     </div>
 
     <div class="mt-3 flex flex-col text-start">

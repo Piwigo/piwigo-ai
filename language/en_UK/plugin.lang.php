@@ -9,6 +9,10 @@ $lang['Send picture file'] = 'Send picture file';
 $lang['Send an image file instead of the image URL.'] = 'Send an image file instead of the image URL.';
 $lang['Ticket callback'] = 'Ticket callback';
 $lang['The AI server sends results back directly instead of polling.'] = 'The AI server sends results back directly instead of polling.';
+$lang['Piwigo reachable from AI server'] = 'Piwigo reachable from AI server';
+$lang['Enable if the AI server can reach your Piwigo over the network.'] = 'Enable if the AI server can reach your Piwigo over the network.';
+$lang['Enabled: the AI server fetches images by URL and pushes results back via callback (faster, less bandwidth, requires a publicly reachable Piwigo).'] = 'Enabled: the AI server fetches images by URL and pushes results back via callback (faster, less bandwidth, requires a publicly reachable Piwigo).';
+$lang['Disabled: Piwigo uploads image files and polls the AI server for results (works on local or private installations).'] = 'Disabled: Piwigo uploads image files and polls the AI server for results (works on local or private installations).';
 $lang['Description prefix'] = 'Description prefix';
 $lang['Text prepended to AI-generated descriptions.'] = 'Text prepended to AI-generated descriptions.';
 $lang['AI server URL'] = 'AI server URL';
@@ -46,3 +50,4 @@ $lang['An error occurred with the Piwigo AI server'] = 'An error occurred with t
 $lang['<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.7+ or MySQL 9+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>'] = '<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.7+ or MySQL 9+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>';
 $lang['Image file not found'] = 'Image file not found';
 $lang['Piwigo AI is outdated, please update the plugin. (If you have updated the plugin but the message persists, deactivate and reactivate the plugin.)'] = 'Piwigo AI is outdated, please update the plugin. (If you have updated the plugin but the message persists, deactivate and reactivate the plugin.)';
+$lang['Unable to connect to the Piwigo AI server'] = 'Unable to connect to the Piwigo AI server';

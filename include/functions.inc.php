@@ -40,9 +40,7 @@ function p_ai_analyze($image, $callback, $send_as_file, $options = [])
   global $conf;
 
   $curl = curl_init($conf['piwigo_ai']['url_server_ai'] . '/analyze');
-  $headers = array();
-  $headers[] = 'X-API-KEY: ' . ($conf['piwigo_ai']['api_key'] ?? 'no-api-key');
-  $headers[] = 'X-PLUGIN-VERSION: '.P_AI_VERSION;
+  $headers = p_ai_default_headers();
   $curl_options = array(
     CURLOPT_POST => true,
     CURLOPT_USERAGENT => 'PiwigoAI Plugin',
@@ -76,26 +74,26 @@ function p_ai_analyze($image, $callback, $send_as_file, $options = [])
 
   
   $response = curl_exec($curl);
-  
+
+  if (false === $response)
+  {
+    return ['errors' => curl_error($curl)];
+  }
+
   if (version_compare(PHP_VERSION, '8', '<'))
   {
     // https://php.net/manual/en/function.curl-close.php
     curl_close($curl);
   }
+
   return p_ai_decode_response($response);
 }
 
 function p_ai_get(string $url, int $timeout = 10)
 {
   global $conf;
-  $headers = array(
-    'X-PLUGIN-VERSION: '.P_AI_VERSION,
-  );
 
-  if (!empty($conf['piwigo_ai']['api_key']))
-  {
-    $headers[] = 'X-API-KEY: '.$conf['piwigo_ai']['api_key'];
-  }
+  $headers = p_ai_default_headers();
 
   $req = curl_init($conf['piwigo_ai']['url_server_ai'] . $url);
   curl_setopt($req, CURLOPT_RETURNTRANSFER, true);
@@ -114,7 +112,7 @@ function p_ai_get(string $url, int $timeout = 10)
 
   if (false === $res)
   {
-    throw new \Exception("cURL error: {$error}");
+    return ['errors' => $error];
   }
 
   return p_ai_decode_response($res);
@@ -124,15 +122,8 @@ function p_ai_post(string $url, array $data, int $timeout = 10)
 {
   global $conf;
 
-  $headers = array(
-    'Content-Type: application/json',
-    'X-PLUGIN-VERSION: '.P_AI_VERSION,
-  );
-
-  if (!empty($conf['piwigo_ai']['api_key']))
-  {
-    $headers[] = 'X-API-KEY: '.$conf['piwigo_ai']['api_key'];
-  }
+  $headers = p_ai_default_headers();
+  $headers[] = 'Content-Type: application/json';
 
   $req = curl_init($conf['piwigo_ai']['url_server_ai'] . $url);
   curl_setopt($req, CURLOPT_POST, true);
@@ -153,10 +144,28 @@ function p_ai_post(string $url, array $data, int $timeout = 10)
 
   if (false === $res)
   {
-    throw new \Exception("cURL error: {$error}");
+    return ['errors' => $error];
   }
 
   return p_ai_decode_response($res);
+}
+
+function p_ai_default_headers()
+{
+  global $conf;
+  $headers = [];
+
+  if (!empty($conf['piwigo_ai']['api_key']))
+  {
+    $headers[] = 'X-API-KEY: '.$conf['piwigo_ai']['api_key'];
+  }
+
+  if (defined('P_AI_VERSION'))
+  {
+    $headers[] = 'X-PLUGIN-VERSION: '.P_AI_VERSION;
+  }
+
+  return $headers;
 }
 
 function p_ai_submit_image(array $image_info, array $options)
@@ -165,16 +174,11 @@ function p_ai_submit_image(array $image_info, array $options)
 
   $abs_root = get_absolute_root_url();
 
+  $is_accessible = $conf['piwigo_ai']['is_accessible'];
   $callback = null;
-  if ($conf['piwigo_ai']['ticket_callback'])
+  if ($is_accessible)
   {
     $callback = $abs_root . 'ws.php?format=json&method=pwg.ai.analyze';
-  }
-
-  $send_as_file = $conf['piwigo_ai']['send_picture_file'] ?? false;
-
-  if ($send_as_file)
-  {
     $img = realpath(PHPWG_ROOT_PATH . $image_info['path']);
     if (!$img || !is_file($img))
     {
@@ -186,7 +190,12 @@ function p_ai_submit_image(array $image_info, array $options)
     $img = $abs_root . (new SrcImage($image_info))->rel_path;
   }
 
-  $response = p_ai_analyze($img, $callback, $send_as_file, $options);
+  $response = p_ai_analyze($img, $callback, $is_accessible, $options);
+
+  if (!empty($response['errors']))
+  {
+    return array('errors' => $response['errors']);
+  }
 
   if (!empty($response['status']) && $response['status'] >= 400)
   {
@@ -386,4 +395,64 @@ function p_ai_migrate_db()
   {
     pwg_query('ALTER TABLE `'.TAGS_TABLE.'` MODIFY `embedding` VECTOR(512) NULL DEFAULT NULL;');
   }
+}
+
+function p_ai_ping($default_conf)
+{
+  global $conf;
+
+  // conf fallback because we use this function in
+  // maintain.class.php
+  if (!is_array($conf['piwigo_ai'] ?? null))
+  {
+    $conf['piwigo_ai'] = safe_unserialize(conf_get_param('piwigo_ai', $default_conf));
+  }
+
+  // check url localhost / 127.0.0.1
+  $piwigo_url = get_absolute_root_url();
+  if (!p_ai_is_public_url($piwigo_url))
+  {
+    $conf['piwigo_ai']['is_accessible'] = false;
+    conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
+    return true;
+  }
+
+  $result = p_ai_post('/ping', ['callback' => $piwigo_url]);
+  if (isset($result['errors']))
+  {
+    return false;
+  }
+
+  $conf['piwigo_ai']['is_accessible'] = isset($result['pong']) && $result['pong'];
+  conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
+  return true;
+}
+
+function p_ai_is_public_url($url)
+{
+  $host = parse_url($url, PHP_URL_HOST);
+
+  // no host = no public
+  if (!$host) return false;
+
+  // simple test: localhost, ipv4 localhost, ipv6 localhost = no public
+  if (in_array($host, ['localhost', '127.0.0.1', '::1'])) return false;
+
+  // ip: check if this ip is public
+  if (filter_var($host, FILTER_VALIDATE_IP))
+  {
+    return p_ai_is_public_ip($host);
+  }
+
+  // domain name = we assume public
+  return true;
+}
+
+function p_ai_is_public_ip($ip)
+{
+  return false !== filter_var(
+      $ip,
+      FILTER_VALIDATE_IP,
+      FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+  );
 }
