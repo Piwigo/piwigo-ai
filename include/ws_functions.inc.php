@@ -76,14 +76,17 @@ function p_ai_add_methods($arr)
     'pwg.ai.check_tickets',
     'p_ws_ai_check_tickets',
     array(
-      'pwg_token' => array(),
+      'pwg_token' => array(
+        'flags'=>WS_PARAM_OPTIONAL,
+      ),
+      'exec_id' => array(),
     ),
     'Check Piwigo AI tickets available for callback',
     null,
     array(
       'hidden' => true,
       'post_only' => true,
-      'admin_only' => true,
+      'admin_only' => false,
     )
   );
 
@@ -165,49 +168,67 @@ function p_ws_ai_check_compatibility($params)
  */
 function p_ws_ai_check_tickets($params)
 {
-  if (!connected_with_pwg_ui())
-  {
-    return new PwgError(401, 'Access Denied');
-  }
+  global $logger;
 
-  if (get_pwg_token() != $params['pwg_token'])
-  {
-    return new PwgError(403, l10n('Invalid security token'));
-  }
+  // to prevent fire and forget
+  @ignore_user_abort(true);
 
-  $query = '
-SELECT * 
-  FROM '.P_AI_TICKETS_TABLE.'
-  WHERE 
-    use_callback = \'false\'
-  AND
-    status = \'pending\'
-  ;';
-
-  $tickets = query2array($query);
-  $nb_of_tickets = count($tickets);
-  if ($nb_of_tickets > 0)
+  if (connected_with_pwg_ui())
   {
-    $max_count = min($nb_of_tickets, 50);
-    for($i = 0; $i < $max_count; $i++)
+    if (isset($params['pwg_token']))
     {
-      $result = p_ai_get('/analyze/'.$tickets[$i]['ticket_id']);
-
-      if (isset($result['errors']) || isset($result['ticket_status']))
+      if (get_pwg_token() != $params['pwg_token'])
       {
-        continue;
+        $logger->error('[PIWIGO_AI][CHECK TICKETS] Invalid pwg_token authentication');
+        return new PwgError(401, l10n('Invalid authentication'));
       }
 
-      // Piwigo is going to drive me crazy
-      // I don't understand why I have to go through all this here for ocr
-      $result['ocr'] = !empty($result['ocr']) 
-        ? pwg_db_real_escape_string(is_array($result['ocr']) 
-          ? json_encode($result['ocr'], JSON_UNESCAPED_UNICODE) 
-          : $result['ocr']) 
-        : null;
-      p_ai_save_ticket($result);
+      if (!is_admin())
+      {
+        $logger->error('[PIWIGO_AI][CHECK TICKETS] Invalid admin authentication');
+        return new PwgError(403, l10n('Forbidden'));
+      }
+    }
+    else
+    {
+      $logger->error('[PIWIGO_AI][CHECK TICKETS] Missing pwg_token');
+      return new PwgError(401, l10n('Missing pwg_token'));
     }
   }
 
+  $stored = conf_get_param('ai_check_tickets_running', null);
+  if (!$stored)
+  {
+    return new PwgError(403, l10n('No exec running'));
+  }
+
+  list($stored_exec_id, $time_exec) = explode('-', $stored);
+  if (!hash_equals($stored_exec_id, $params['exec_id']))
+  {
+    $logger->error('[PIWIGO_AI][CHECK TICKETS] Invalid exec_id');
+    return new PwgError(403, l10n('Invalid exec_id'));
+  }
+
+  $result = p_ai_get('/tickets');
+
+  if (isset($result['errors']) || !isset($result['tickets']))
+  {
+    $logger->error('[PIWIGO_AI][CHECK TICKETS] Unable to retrieves result from AI Server');
+    pwg_unique_exec_ends('ai_check_tickets');
+    return new PwgError(500, l10n('Error with AI Server'));
+  }
+
+  // save the results
+  foreach($result['tickets'] as $ticket)
+  {
+    $ticket['ocr'] = !empty($ticket['ocr'])
+      ? pwg_db_real_escape_string(is_array($ticket['ocr'])
+        ? json_encode($ticket['ocr'], JSON_UNESCAPED_UNICODE)
+        : $ticket['ocr'])
+      : null;
+    p_ai_save_ticket($ticket);
+  }
+
+  pwg_unique_exec_ends('ai_check_tickets');
   return 'checked';
 }

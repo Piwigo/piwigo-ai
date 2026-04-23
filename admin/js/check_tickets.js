@@ -9,6 +9,7 @@ function p_ai_check_tickets() {
     dataType: 'json',
     data: {
       pwg_token: p_ai_ct_token,
+      exec_id: p_ai_exec,
     },
     success: function(res) {},
     error: function(e) {}

@@ -1,6 +1,24 @@
 <?php
 if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
 
+function p_ai_init()
+{
+  global $conf, $template;
+
+  load_language('plugin.lang', P_AI_PATH);
+  $conf['piwigo_ai'] = safe_unserialize($conf['piwigo_ai']);
+
+  if (isset($conf['piwigo_ai']['is_accessible']) 
+    && !$conf['piwigo_ai']['is_accessible'])
+  {
+    p_ai_check_tickets();
+  }
+
+  $template->assign(array(
+    'P_AI_PATH' => P_AI_PATH,
+  ));
+}
+
 function p_ai_decode_response($res)
 {
   $decoded = json_decode($res, true);
@@ -9,18 +27,6 @@ function p_ai_decode_response($res)
     conf_update_param('piwigo_ai_outdated', true, true);
   }
   return $decoded;
-}
-
-function p_ai_init()
-{
-  global $conf, $template;
-
-  load_language('plugin.lang', P_AI_PATH);
-  $conf['piwigo_ai'] = safe_unserialize($conf['piwigo_ai']);
-
-  $template->assign(array(
-    'P_AI_PATH' => P_AI_PATH,
-  ));
 }
 
 function p_ai_check_account()
@@ -212,7 +218,7 @@ function p_ai_submit_image(array $image_info, array $options)
     array(
       'ticket_id'    => $response['ticket_id'],
       'image_id'     => $image_info['id'],
-      'status'       => $response['job_status'],
+      'status'       => $response['ticket_status'],
       'options'      => $response['options'],
       'cost'         => $response['cost'],
       'use_callback' => $callback ? 'true' : 'false',
@@ -455,4 +461,97 @@ function p_ai_is_public_ip($ip)
       FILTER_VALIDATE_IP,
       FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
   );
+}
+
+function p_ai_check_tickets()
+{
+  $is_running = pwg_unique_exec_is_running('ai_check_tickets');
+  if ($is_running) return; // another one checking actually
+
+  $query = '
+SELECT *
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE
+    use_callback = \'false\'
+  AND
+    status = \'pending\'
+  LIMIT 1
+;';
+
+  $tickets = pwg_db_fetch_assoc(pwg_query($query));
+  if (empty($tickets)) return;
+
+  $exec_id = pwg_unique_exec_begins('ai_check_tickets');
+  if (!$exec_id) return; // another one checking actually
+
+  $url = get_absolute_root_url().'ws.php?format=json&method=pwg.ai.check_tickets';
+  $data = [
+    'exec_id' => $exec_id,
+  ];
+  $is_send = p_ai_fire_and_forget($url, $data);
+  
+  if (!$is_send && defined('IN_ADMIN'))
+  {
+    // fallback if p_ai_fire_and_forget failed
+    global $template;
+    $template->block_footer_script(null, 
+      'const p_ai_ct_token = "'.get_pwg_token().'"; 
+       const p_ai_exec = "'.$exec_id.'";'
+    );
+    $template->func_combine_script(array(
+	    "id" => "p_ai_check_tickets",
+	    "load" => "footer",
+	    "path" => P_AI_PATH.'/admin/js/check_tickets.js'
+	  ));
+  }
+  else if (!$is_send)
+  {
+    // trigger exec_end if fire and forget doesn't work
+    // and isn't in admin
+    pwg_unique_exec_ends('ai_check_tickets');
+  }
+}
+
+function p_ai_fire_and_forget($url, $data)
+{
+  $parsed_url = parse_url($url);
+  if (!$parsed_url || empty($parsed_url['host']))
+  {
+    return false;
+  }
+
+  $is_https = $parsed_url['scheme'] === 'https';
+  $fallback_port = $is_https ? 443 : 80;
+  $host_prefix = $is_https ? 'ssl://' : '';
+
+  $path = $parsed_url['path'] ?? '/';
+  if (!empty($parsed_url['query']))
+  {
+    $path .= '?' . $parsed_url['query'];
+  }
+
+  $socket = @fsockopen(
+    $host_prefix . $parsed_url['host'],
+    $parsed_url['port'] ?? $fallback_port,
+    $error_code,
+    $error_message,
+    0.5 // 
+  );
+
+  if (!$socket) return false;
+
+  // body like "key=value&pwg_token=123abc"
+  $body = http_build_query($data);
+
+  $req = 'POST ' . $path . ' HTTP/1.1' . "\r\n";
+  $req .= 'Host: ' . $parsed_url['host'] . "\r\n";
+  $req .= 'Content-Type: application/x-www-form-urlencoded' . "\r\n";
+  $req .= "Content-Length: " . strlen($body) . "\r\n";
+  $req .= 'Connection: Close' . "\r\n\r\n";
+  $req .= $body;
+
+  fwrite($socket, $req);
+  fclose($socket);
+
+  return true;
 }
