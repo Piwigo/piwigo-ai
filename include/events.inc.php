@@ -4,9 +4,9 @@ if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
 /**
  * `Piwigo AI` : loc_end_add_uploaded_file
  */
-function p_ai_loc_end_add_uploaded_file($image_info)
+function p_ai_loc_end_add_uploaded_file(array $image_info)
 {
-  global $conf, $template, $page;
+  global $conf, $logger;
 
   if (empty($conf[ 'piwigo_ai' ][ 'api_key' ])) return;
 
@@ -19,7 +19,12 @@ function p_ai_loc_end_add_uploaded_file($image_info)
     'ocr' => filter_var($_POST['ocr'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
   ];
 
-  p_ai_submit_image($image_info, $options);
+  $response = p_ai_submit_image($image_info, $options);
+  if (isset($response['errors']))
+  {
+    $logger->error('[PIWIGO AI]['.__FUNCTION__.'] Error : ' . $response['errors']);
+  }
+
   // TODO: found a way to pass some infos during upload
   // for example to show a toaster when an error occured from the AI server
 }

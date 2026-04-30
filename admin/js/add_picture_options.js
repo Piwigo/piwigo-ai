@@ -51,6 +51,7 @@ $(function() {
     // });
 
     p_uploader.bind('PostInit', function(up) {
+      // negative priority so we run AFTER photos_add_direct.js BeforeUpload
       up.bind('BeforeUpload', function(up, file) {
         const params = up.getOption('multipart_params') || {};
         params.ai = p_ai_upload.is(':checked');
@@ -60,7 +61,7 @@ $(function() {
           params.ocr = p_ai_upload_ocr.is(':checked');
         }
         up.setOption('multipart_params', params);
-      });
+      }, -1);
 
       up.bind('FilesAdded', function(up, files) {
         last_nb_files = p_uploader.files.length ?? 0;
