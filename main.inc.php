@@ -86,7 +86,6 @@ if (defined('IN_ADMIN'))
   $events_admin = P_AI_PATH.'include/events_admin.inc.php';
   add_event_handler('loc_begin_admin_page', 'p_ai_loc_begin_admin_page_load_tw', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_admin);
   add_event_handler('loc_end_admin', 'p_ai_loc_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_admin);
-  add_event_handler('loc_begin_admin', 'p_ai_begin_end_admin', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_admin);
 
   // batch manager apply action
   add_event_handler('element_set_global_action', 'p_ai_element_set_global_action', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_admin);
