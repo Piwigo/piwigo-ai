@@ -36,31 +36,6 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
         value="{$P_AI_CONFIG.description_prefix}"  
       />
     </div>
-
-    <div class="mt-5">
-      <span class="p-1.25 rounded-full icon-robot-head icon-blue"></span>
-      <span class="font-bold text-sm p-1.25 dark:text-[#c1c1c1]">{'Server AI'|translate}</span>
-    </div>
-    
-    <div class="mt-4 flex flex-col text-start">
-      <label for="url_server_ai" class="font-bold">{"AI server URL"|translate|escape:html}</label>
-      <p class="text-xs italic">{'URL of the AI server used for processing.'|translate}</p>
-
-      <input class="p-ai-input" 
-        id="url_server_ai" name="url_server_ai" type="text" 
-        value="{$P_AI_CONFIG.url_server_ai}"
-      />
-    </div>
-
-    <div class="mt-3 flex flex-col text-start">
-      <label for="api_key" class="font-bold">{"API key"|translate|escape:html}</label>
-      <p class="text-xs italic">{'Authentication key for the AI server.'|translate}</p>
-
-      <input class="p-ai-input" 
-        id="api_key" name="api_key" type="text" 
-        value="{$P_AI_CONFIG.api_key}"
-      />
-    </div>
   </div>
 </div>
 <div class="savebar-footer justify-end!">

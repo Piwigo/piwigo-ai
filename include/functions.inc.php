@@ -37,6 +37,7 @@ function p_ai_check_account()
   // TODO: remove after closing beta access
   $conf['piwigo_ai']['account_id'] = $conf['piwigo_ai']['account_id'] ?? $conf['piwigo_ai_beta_account_id'] ?? null;
   $conf['piwigo_ai']['api_key'] = $conf['piwigo_ai']['api_key'] ?? $conf['piwigo_ai_beta_api_key'] ?? null;
+  $conf['piwigo_ai']['url_server_ai'] = $conf['piwigo_ai']['url_server_ai'] ?? $conf['piwigo_ai_beta_url'] ?? null;
 
   return !empty($conf['piwigo_ai']['account_id']) || !empty($conf['piwigo_ai']['api_key']);
 }
