@@ -2,7 +2,7 @@
   <h2>{'PiwigoAI'|translate}</h2>
 </div>
 
-{if $P_AI_CREDITS}
+{if isset($P_AI_CREDITS)}
   <div class="piwigoai m-5 pb-16 flex gap-10">
     <div class="flex flex-col items-start text-start space-y-4">
       <p>

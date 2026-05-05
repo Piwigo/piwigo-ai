@@ -17,5 +17,9 @@ global $template;
 // | template init                                                         |
 // +-----------------------------------------------------------------------+
 
-$template->assign('P_AI_TICKETS', p_ai_get_tickets());
-$template->set_filename('p_ai_admin_content', P_AI_REALPATH . '/admin/template/queue.tpl');
+$check_tickets_exec_id = bin2hex(random_bytes(20));
+$template->assign(array(
+  'PWG_TOKEN' => get_pwg_token(),
+  'CHECK_TICKETS_EXEC_ID' => $check_tickets_exec_id,
+));
+$template->set_filename('p_ai_admin_content', P_AI_REALPATH . '/admin/template/tickets.tpl');

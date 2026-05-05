@@ -51,3 +51,13 @@ $lang['<div>You are running in degraded mode because your database version (%s) 
 $lang['Image file not found'] = 'Image file not found';
 $lang['Piwigo AI is outdated, please update the plugin. (If you have updated the plugin but the message persists, deactivate and reactivate the plugin.)'] = 'Piwigo AI is outdated, please update the plugin. (If you have updated the plugin but the message persists, deactivate and reactivate the plugin.)';
 $lang['Unable to connect to the Piwigo AI server'] = 'Unable to connect to the Piwigo AI server';
+$lang['No pending tickets at the moment'] = 'No pending tickets at the moment';
+$lang['No failed tickets'] = 'No failed tickets';
+$lang['Purge failed'] = 'Purge failed';
+$lang['Check tickets'] = 'Check tickets';
+$lang['Retry failed'] = 'Retry failed';
+$lang['tickets per page'] = 'tickets per page';
+$lang['Automatic ticket verification is already in progress.'] = 'Automatic ticket verification is already in progress.';
+$lang['%d tickets processed'] = '%d tickets processed';
+$lang['%d tickets resubmitted'] = '%d tickets resubmitted';
+$lang['%d tickets deleted'] = '%d tickets deleted';

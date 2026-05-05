@@ -20,7 +20,7 @@ $result = p_ai_get('/credits');
 // +-----------------------------------------------------------------------+
 
 $template->assign(array(
-  'P_AI_CREDITS'=> $result['credits'] ?? null,
+  'P_AI_CREDITS'=> $result['credits'] ?? 0,
 ));
 
 if (!isset($result['credits']))

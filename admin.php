@@ -16,7 +16,7 @@ include_once(PHPWG_ROOT_PATH . 'admin/include/tabsheet.class.php');
 $tabsheet = new tabsheet();
 $tabsheet->set_id('piwigoai_tab');
 $tabsheet->add('overview', '<span class="icon-television"></span>'.l10n('Overview'), P_AI_ADMIN . '-overview');
-$tabsheet->add('queue', '<span class="icon-tasks"></span>'.l10n('Queue'), P_AI_ADMIN . '-queue');
+$tabsheet->add('tickets', '<span class="icon-tasks"></span>'.l10n('Tickets'), P_AI_ADMIN . '-tickets');
 $tabsheet->add('credits', '<span class="icon-ai-token"></span>'.l10n('Credits'), P_AI_ADMIN . '-credits');
 $tabsheet->add('config', '<span class="icon-cog"></span>'.l10n('Configuration'), P_AI_ADMIN . '-config');
 $tabsheet->select($page['tab']);

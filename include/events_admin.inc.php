@@ -9,6 +9,9 @@ function p_ai_loc_begin_admin_page_load_tw()
   {
     // put tailwind in darkmode
     add_event_handler('loc_begin_page_header', 'p_ai_setprefilter_admins');
+    // add or remove dark / light for pwgToaster
+    $template->block_footer_script(null, '
+    $(".piwigoai").removeClass("light").addClass("dark");');
   }
   $template->func_combine_css(array('path' => P_AI_PATH.'/css/output.css'));
   $template->func_combine_css(array('path' => P_AI_PATH.'/vendor/fontello/css/fontello.css'));
