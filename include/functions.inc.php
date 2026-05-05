@@ -250,13 +250,13 @@ SELECT *
   WHERE ticket_id = "'.pwg_db_real_escape_string($data['ticket_id']).'"  
   ';
 
-  $logger->info('['.__FUNCTION__.'] Saving ' . pwg_db_real_escape_string($data['ticket_id']));
-
   $result = pwg_db_fetch_assoc(pwg_query($query));
   if (empty($result))
   {
     return array('errors' => 'Ticket not found');
   }
+
+  $logger->info('['.__FUNCTION__.'] Saving ' . pwg_db_real_escape_string($data['ticket_id']));
 
   if (isset($data['failed']))
   {

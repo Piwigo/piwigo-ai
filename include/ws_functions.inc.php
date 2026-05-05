@@ -14,15 +14,30 @@ function p_ai_add_methods($arr)
     'pwg.ai.analyze',
     'p_ws_ai_analyze',
     array(
+      'account_id' => array(
+        'default' => null
+      ),
       'ticket_id' => array(),
-      'cost' => array(),
-      'ocr' => array('default' => null),
-      'description' => array('default' => null),
-      'tags' => array('default' => null),
-      'embedding' => array('default' => null),
-      'process_time' => array('default' => null),
+      'cost' => array(
+        'type' => WS_TYPE_INT|WS_TYPE_POSITIVE,
+      ),
+      'ocr' => array(
+        'default' => null
+      ),
+      'description' => array(
+        'default' => null
+      ),
+      'tags' => array(
+        'default' => null
+      ),
+      'embedding' => array(
+        'default' => null
+      ),
+      'process_time' => array(
+        'default' => null
+      ),
       'failed' => array(
-        'flags'=>WS_PARAM_OPTIONAL,
+        'flags' => WS_PARAM_OPTIONAL,
       ),
     ),
     'Save ticket infos',
@@ -174,6 +189,18 @@ function p_ai_add_methods($arr)
  */
 function p_ws_ai_analyze($params)
 {
+  global $conf;
+
+  if (empty($params['account_id']) || empty($conf['piwigo_ai']['account_id']))
+  {
+    return new PwgError(401, 'Missing account_id');
+  }
+
+  if (!hash_equals($conf['piwigo_ai']['account_id'], $params['account_id']))
+  {
+    return new PwgError(401, 'Invalid account_id');
+  }
+
   $save_ticket = p_ai_save_ticket($params);
 
   if (isset($save_ticket['errors']))
