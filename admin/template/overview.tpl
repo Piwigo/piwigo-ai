@@ -16,12 +16,11 @@ const str_error_compatibility = "{'The database is still not compatible with the
 
 <div class="piwigoai light m-5 dark:text-[#a1a1a1]!">
   <main>
-
     {* --- Stats --- *}
-    <div class="grid grid-cols-4 gap-3 mb-4">
+    <div class="grid grid-cols-4 gap-3 my-4">
 
       <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4 flex items-center gap-4">
-        <i class="icon-chart-bar text-[#F3A73B] text-4xl"></i>
+        <i class="icon-chart-bar text-4xl"></i>
         <div>
           <p class="text-2xl font-bold leading-tight">{$P_AI_STATS.coverage_pct}%</p>
           <p class="text-xs text-gray-400 mt-0.5">{'Gallery coverage'|translate}</p>
@@ -30,7 +29,7 @@ const str_error_compatibility = "{'The database is still not compatible with the
       </div>
 
       <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4 flex items-center gap-4">
-        <i class="icon-robot-head text-[#8B6BE8] text-4xl"></i>
+        <i class="icon-robot-head text-4xl"></i>
         <div>
           <p class="text-2xl font-bold leading-tight">{$P_AI_STATS.completed_jobs}</p>
           <p class="text-xs text-gray-400 mt-0.5">{'Photos analyzed'|translate}</p>
@@ -38,7 +37,7 @@ const str_error_compatibility = "{'The database is still not compatible with the
       </div>
 
       <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4 flex items-center gap-4">
-        <i class="icon-clock text-yellow-400 text-4xl"></i>
+        <i class="icon-clock text-4xl"></i>
         <div>
           <p class="text-2xl font-bold leading-tight">{$P_AI_STATS.pending_jobs}</p>
           <p class="text-xs text-gray-400 mt-0.5">{'Pending tickets'|translate}</p>
@@ -46,7 +45,7 @@ const str_error_compatibility = "{'The database is still not compatible with the
       </div>
 
       <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4 flex items-center gap-4">
-        <i class="icon-tags text-[#6B8CFF] text-4xl"></i>
+        <i class="icon-tags text-4xl"></i>
         <div>
           <p class="text-2xl font-bold leading-tight">{$P_AI_STATS.tags}</p>
           <p class="text-xs text-gray-400 mt-0.5">{'AI-generated tags'|translate}</p>

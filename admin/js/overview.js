@@ -46,7 +46,7 @@ function render_recent_row(ticket, is_last) {
     status_html = '<span class="inline-flex items-center gap-1 p-ai-waiting text-xs px-2 py-0.5 rounded italic shrink-0"><i class="icon-clock"></i> ' + p_ai_str_status_pending + '</span>';
   }
 
-  const border = is_last ? '' : ' border-b border-gray-100';
+  const border = is_last ? '' : ' border-b border-gray-100 dark:border-[#3f3f3f]';
   return '<div class="grid grid-cols-[1fr_auto_auto] items-center py-2' + border + '">'
     + '<div class="flex items-center gap-2 min-w-0">'
     + '<i class="icon-picture text-gray-300 shrink-0"></i>'
