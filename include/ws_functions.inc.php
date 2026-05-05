@@ -41,11 +41,9 @@ function p_ai_add_methods($arr)
       'is_accessible' => array(
         'type' => WS_TYPE_BOOL
       ),
-      'ai_url' => array(),
       'description_prefix' => array(
         'flags'=>WS_PARAM_OPTIONAL,
       ),
-      'ai_api_key' => array(),
       'pwg_token' => array(),
     ),
     'Change Piwigo AI configuration',
@@ -203,12 +201,9 @@ function p_ws_ai_config($params)
     return new PwgError(401, 'Access Denied');
   }
 
-  $url_server_ai = rtrim($params['ai_url'], '/');
   $prefix_desc = $params['description_prefix'] ? pwg_db_real_escape_string(strip_tags(stripslashes(trim($params['description_prefix'])))) : null;
 
   $new_conf = array(
-    'api_key' => pwg_db_real_escape_string($params['ai_api_key']),
-    'url_server_ai' => pwg_db_real_escape_string($url_server_ai),
     'is_accessible' => pwg_db_real_escape_string($params['is_accessible']) == 1 ? true : false,
     'description_prefix' => $prefix_desc,
   );

@@ -40,13 +40,13 @@ const p_ai_str_tickets_deleted = "{'%d tickets deleted'|translate|escape:javascr
         </label>
       </div>
 
-      <div class="advanced-filter-btn icon-filter" style="margin:0">
+      <div class="advanced-filter-btn icon-filter m-0">
         <span>{'Filters'|translate}</span>
       </div>
 
     </div>
 
-    <div class="advanced-filter mb-2" id="p-ai-advanced-filter" style="display:none">
+    <div class="advanced-filter mb-2 hidden" id="p-ai-advanced-filter">
       <div class="advanced-filter-header">
         <span class="advanced-filter-title">{'Advanced filters'|translate}</span>
       </div>
@@ -70,7 +70,7 @@ const p_ai_str_tickets_deleted = "{'%d tickets deleted'|translate|escape:javascr
     <div class="grid grid-cols-[2fr_2.5fr_1fr_2fr_1fr] text-start mb-2 mt-4 text-gray-400 dark:text-[#9e9e9e]">
       <p class="font-bold text-sm">{'Photo'|translate}</p>
       <p class="font-bold text-sm">{'Actions'|translate}</p>
-      <p class="group font-bold text-sm cursor-pointer select-none hover:text-[#F3A73B]" id="p-ai-col-cost">{'Credits'|translate} <span id="p-ai-icon-cost" class="icon-up group-hover:inline!" style="display:none"></span></p>
+      <p class="group font-bold text-sm cursor-pointer select-none hover:text-[#F3A73B]" id="p-ai-col-cost">{'Credits'|translate} <span id="p-ai-icon-cost" class="icon-up group-hover:inline! hidden"></span></p>
       <p class="group font-bold text-sm cursor-pointer select-none hover:text-[#F3A73B]" id="p-ai-col-created_at">{'Started'|translate} <span id="p-ai-icon-created_at" class="icon-down group-hover:inline!"></span></p>
       <p class="font-bold text-sm">{'Status'|translate}</p>
     </div>
@@ -81,14 +81,14 @@ const p_ai_str_tickets_deleted = "{'%d tickets deleted'|translate|escape:javascr
       {'Loading...'|translate}
     </div>
 
-    <div id="p-ai-tickets-empty" class="py-5 text-gray-400" style="display:none">
+    <div id="p-ai-tickets-empty" class="py-5 text-gray-400 hidden">
       {'No tickets yet'|translate}
     </div>
 
-    <div id="p-ai-tickets-footer" style="display:none; justify-content:space-between; padding: 1em; height: 33px; margin: 10px 0;">
+    <div id="p-ai-tickets-footer" class="hidden justify-between items-center px-4 h-8.25 my-2.5">
 
       <div class="pagination-per-page">
-        <span style="font-weight:bold; color:unset;">{'tickets per page'|translate}&nbsp;:</span>
+        <span class="font-bold">{'tickets per page'|translate}&nbsp;:</span>
         <a href="#" class="p-ai-per-page" data-value="10">10</a>
         <a href="#" class="p-ai-per-page" data-value="25">25</a>
         <a href="#" class="p-ai-per-page" data-value="50">50</a>

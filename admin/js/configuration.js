@@ -22,8 +22,6 @@ function p_ai_save() {
   p_ai_saving = true;
   const is_accessible = $('#is_accessible').prop('checked');
   const description_prefix = $('#description_prefix').val();
-  const ai_api_key = $('#api_key').val();
-  const ai_url = $('#url_server_ai').val();
 
   $.ajax({
     url: 'ws.php?format=json&method=pwg.ai.config',
@@ -31,8 +29,6 @@ function p_ai_save() {
     dataType: 'json',
     data: {
       pwg_token: PWG_TOKEN,
-      ai_api_key,
-      ai_url,
       description_prefix,
       is_accessible,
     },
