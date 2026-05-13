@@ -42,7 +42,7 @@ function p_ai_check_account()
   return !empty($conf['piwigo_ai']['account_id']) || !empty($conf['piwigo_ai']['api_key']);
 }
 
-function p_ai_analyze($image, $callback, $send_as_file, $options = [])
+function p_ai_analyze($image, $callback, $options = [])
 {
   global $conf;
 
@@ -66,7 +66,7 @@ function p_ai_analyze($image, $callback, $send_as_file, $options = [])
     'language' => get_default_language(),
   );
 
-  if ($send_as_file)
+  if (null === $callback)
   {
     $mime_content_type = mime_content_type($image) ? mime_content_type($image) : 'application/octet-stream';
     $post_data['image'] = new CURLFile($image, $mime_content_type, basename($image));
@@ -186,18 +186,18 @@ function p_ai_submit_image(array $image_info, array $options)
   if ($is_accessible)
   {
     $callback = $abs_root . 'ws.php?format=json&method=pwg.ai.analyze';
-    $img = realpath(PHPWG_ROOT_PATH . $image_info['path']);
+    $img = $abs_root . (new SrcImage($image_info))->rel_path; // https://my-piwigo.com/./upload/2026/05/06/202605xxxxxxxx-xxxxxxx.jpg
+  }
+  else
+  {
+    $img = realpath(PHPWG_ROOT_PATH . $image_info['path']); // /var/www/html/piwigo/upload/2026/05/06/202605xxxxxxxx-xxxxxxx.jpg
     if (!$img || !is_file($img))
     {
       return array('errors' => l10n('Image file not found').' => '.$image_info['path']);
     }
   }
-  else
-  {
-    $img = $abs_root . (new SrcImage($image_info))->rel_path;
-  }
 
-  $response = p_ai_analyze($img, $callback, $is_accessible, $options);
+  $response = p_ai_analyze($img, $callback, $options);
 
   if (!empty($response['errors']))
   {
