@@ -335,9 +335,7 @@ function p_ws_ai_check_tickets($params)
   foreach($result['tickets'] as $ticket)
   {
     $ticket['ocr'] = !empty($ticket['ocr'])
-      ? pwg_db_real_escape_string(is_array($ticket['ocr'])
-        ? json_encode($ticket['ocr'], JSON_UNESCAPED_UNICODE)
-        : $ticket['ocr'])
+      ? pwg_db_real_escape_string($ticket['ocr'])
       : null;
     $saved = p_ai_save_ticket($ticket);
     if (!isset($saved['errors']))

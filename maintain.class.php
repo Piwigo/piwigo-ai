@@ -63,6 +63,12 @@ class piwigo_ai_maintain extends PluginMaintain
       pwg_query('ALTER TABLE `'.IMAGES_TABLE.'` ADD `ocr` LONGTEXT NULL DEFAULT NULL;');
     }
 
+    $query = pwg_query('SHOW COLUMNS FROM `'.IMAGES_TABLE.'` LIKE "ai_description";');
+    if (!pwg_db_num_rows($query))
+    {
+      pwg_query('ALTER TABLE `'.IMAGES_TABLE.'` ADD `ai_description` LONGTEXT NULL DEFAULT NULL;');
+    }
+
     $query = pwg_query('SHOW COLUMNS FROM `'.IMAGES_TABLE.'` LIKE "embedding";');
     if (!pwg_db_num_rows($query))
     {
@@ -149,6 +155,7 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
   {
     pwg_query('DROP TABLE IF EXISTS `'. $this->table .'`;');
     pwg_query('ALTER TABLE `'. IMAGES_TABLE .'` DROP COLUMN `ocr`;');
+    pwg_query('ALTER TABLE `'. IMAGES_TABLE .'` DROP COLUMN `ai_description`;');
     pwg_query('ALTER TABLE `'. IMAGES_TABLE .'` DROP COLUMN `embedding`;');
     pwg_query('ALTER TABLE `'. TAGS_TABLE .'` DROP COLUMN `ai`;');
     pwg_query('ALTER TABLE `'. TAGS_TABLE .'` DROP COLUMN `embedding`;');
