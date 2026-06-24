@@ -28,7 +28,7 @@ if (basename(dirname(__FILE__)) != 'piwigo_ai')
 // +-----------------------------------------------------------------------+
 global $prefixeTable;
 
-define('P_AI_VERSION', '0.0.5beta');
+define('P_AI_VERSION', '0.0.6beta');
 define('P_AI_ID', basename(dirname(__FILE__)));
 define('P_AI_PATH', PHPWG_PLUGINS_PATH . P_AI_ID . '/');
 define('P_AI_REALPATH', realpath(P_AI_PATH));
@@ -36,7 +36,7 @@ define('P_AI_ADMIN', get_root_url() . 'admin.php?page=plugin-' . P_AI_ID);
 define('P_AI_TICKETS_TABLE',   $prefixeTable . 'ai_tickets');
 
 // +-----------------------------------------------------------------------+
-// | Init Piwigo AI Plugin                                                   |
+// | Init Piwigo AI Plugin                                                 |
 // +-----------------------------------------------------------------------+
 
 include_once(P_AI_PATH . 'include/functions.inc.php');
