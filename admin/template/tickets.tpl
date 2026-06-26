@@ -56,8 +56,8 @@ const p_ai_str_tickets_deleted = "{'%d tickets deleted'|translate|escape:javascr
           <label class="advanced-filter-item-label">{'Status'|translate}</label>
           <div class="advanced-filter-item-container">
             <select class="user-action-select advanced-filter-select" id="p-ai-filter-status">
-              <option value="">{'All'|translate}</option>
-              <option value="pending" selected>{'Pending'|translate}</option>
+              <option value="" selected>{'All'|translate}</option>
+              <option value="pending">{'Pending'|translate}</option>
               <option value="completed">{'Completed'|translate}</option>
               <option value="failed">{'Failed'|translate}</option>
             </select>

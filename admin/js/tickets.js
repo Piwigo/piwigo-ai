@@ -2,7 +2,7 @@ let p_ai_page = 0;
 let p_ai_per_page = 10;
 let p_ai_order = 'created_at';
 let p_ai_dir = 'DESC';
-let p_ai_status = 'pending';
+let p_ai_status = '';
 
 const p_ai_sortable_cols = ['cost', 'created_at'];
 
@@ -20,6 +20,7 @@ $(function() {
       $('.advanced-filter-btn, .advanced-filter').addClass('advanced-filter-open');
     }
   });
+  $('.advanced-filter-btn').trigger('click');
 
 $('#p-ai-filter-status').on('change', function() {
     p_ai_status = $(this).val();
@@ -213,7 +214,7 @@ function render_row(ticket) {
   }
 
   return '<div class="grid grid-cols-[2fr_2.5fr_1fr_2fr_1fr] items-center min-h-10 mb-2.5 shadow-sm text-start bg-[#fafafa] dark:bg-[#333] dark:text-[#a1a1a1]">'
-    + '<div class="overflow-hidden text-ellipsis whitespace-nowrap mr-2 pl-2"><span class="icon-picture mr-1"></span><a class="font-bold" href="' + photo_link + '">' + name + '</a></div>'
+    + '<div class="overflow-hidden text-ellipsis whitespace-nowrap mr-2 pl-2"><span class="icon-picture mr-1"></span><a class="font-bold" target="_blank" href="' + photo_link + '">' + name + '</a></div>'
     + '<div class="flex items-center gap-1.5 flex-wrap px-2">' + actions + '</div>'
     + '<div class="px-2.5 text-gray-500 text-sm">' + cost + '</div>'
     + '<div class="overflow-hidden whitespace-nowrap px-2"><i class="icon-clock"></i> ' + date + '</div>'

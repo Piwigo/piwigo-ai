@@ -101,6 +101,11 @@ function p_ai_add_methods($arr)
         'default' => null,
         'flags'   => WS_PARAM_OPTIONAL,
       ),
+      'iteration' => array(
+        'default' => 0,
+        'flags'   => WS_PARAM_OPTIONAL,
+        'type'    => WS_TYPE_INT,
+      ),
     ),
     'Check Piwigo AI tickets available for callback',
     null,
@@ -299,8 +304,8 @@ function p_ws_ai_check_tickets($params)
 
   if ($params['force'])
   {
-    $exec_running = pwg_unique_exec_is_running('ai_check_tickets');
-    if ($exec_running)
+    // timeout-aware: a stale lock from a crashed worker won't 409 forever
+    if (p_ai_check_tickets_running())
     {
       return new PwgError(409, l10n('Automatic ticket verification is already in progress.'));
     }
@@ -321,8 +326,9 @@ function p_ws_ai_check_tickets($params)
     }
   }
 
-  $result = p_ai_get('/tickets');
-
+  $pending_tickets = p_ai_get_pending_tickets();
+  $result = p_ai_post('/tickets/poll', ['ticket_ids' => array_keys($pending_tickets)]);
+  
   if (isset($result['errors']) || !isset($result['tickets']))
   {
     $logger->error('[PIWIGO_AI][CHECK TICKETS] Unable to retrieves result from AI Server');
@@ -330,21 +336,100 @@ function p_ws_ai_check_tickets($params)
     return new PwgError(500, l10n('Error with AI Server'));
   }
 
-  // save the results
-  $count = 0;
+  // collect the results, then save them all in one batch
+  $to_save = array();
   foreach($result['tickets'] as $ticket)
   {
-    $ticket['ocr'] = !empty($ticket['ocr'])
-      ? pwg_db_real_escape_string($ticket['ocr'])
-      : null;
-    $saved = p_ai_save_ticket($ticket);
-    if (!isset($saved['errors']))
+    $curr_ticket = $pending_tickets[$ticket['ticket_id']] ?? null;
+    if (empty($curr_ticket))
+    {
+      continue;
+    }
+
+    $options = json_decode($curr_ticket['options'], true);
+    $is_description_failed = $options['caption'] && is_null($ticket['description']);
+    $is_ocr_failed = $options['ocr'] && is_null($ticket['ocr']);
+    $is_tagging_failed = $options['tagging'] && empty($ticket['tags']);
+    $is_failed = !isset($ticket['failed'])
+      && $is_description_failed
+      && $is_ocr_failed
+      && $is_tagging_failed;
+
+    if ($is_failed)
+    {
+      $ticket['failed'] = 'detected failed by piwigo';
+    }
+
+    $to_save[] = $ticket;
+  }
+
+  $count = 0;
+  $to_ack = array();
+  $saved = p_ai_save_tickets($to_save, $pending_tickets);
+  foreach ($saved as $ticket_id => $res)
+  {
+    if (!isset($res['errors']))
     {
       $count++;
+      $to_ack[] = $ticket_id;
     }
   }
 
-  if (!$params['force']) pwg_unique_exec_ends('ai_check_tickets');
+  // tell the AI server it can purge the results we durably saved
+  if (!empty($to_ack))
+  {
+    p_ai_post('/tickets/ack', ['ticket_ids' => $to_ack]);
+  }
+
+  // not_found / acked will never resolve, fail them so they leave the queue
+  $terminal = array(
+    'not found on AI server' => $result['not_found'] ?? array(),
+    'result already acknowledged' => $result['acked'] ?? array(),
+  );
+  foreach ($terminal as $message => $ticket_ids)
+  {
+    // keep only the ids we actually hold as pending, then fail them in one query
+    $ids = array();
+    foreach ($ticket_ids as $ticket_id)
+    {
+      if (isset($pending_tickets[$ticket_id]))
+      {
+        $ids[] = '"'.pwg_db_real_escape_string($ticket_id).'"';
+      }
+    }
+    if (empty($ids))
+    {
+      continue;
+    }
+
+    pwg_query('
+UPDATE '.P_AI_TICKETS_TABLE.'
+  SET status = \'failed\'
+    , failed_message = \''.pwg_db_real_escape_string($message).'\'
+  WHERE ticket_id IN ('.implode(',', $ids).')
+;');
+    $count += count($ids);
+  }
+
+  // continue only while a round actually resolves something; the cap is a safety bound
+  $iteration = (int)$params['iteration'];
+  $has_more = !$params['force']
+    && $count > 0
+    && $iteration < 20
+    && count(p_ai_get_pending_tickets()) > 0;
+
+  if ($has_more)
+  {
+    // hold the same lock across the whole chain so no parallel seed can start
+    p_ai_refresh_check_lock($params['exec_id']);
+    sleep(5);
+    p_ai_fire_check_worker($params['exec_id'], $iteration + 1);
+  }
+  else if (!$params['force'])
+  {
+    pwg_unique_exec_ends('ai_check_tickets');
+  }
+
   return array('processed' => $count);
 }
 

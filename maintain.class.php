@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
     if ($old_version !== $new_version)
     {
       conf_delete_param('piwigo_ai_outdated');
+      conf_delete_param('ai_check_tickets_running'); // clean stucked exec
     }
 
     $this->install($new_version, $errors);
