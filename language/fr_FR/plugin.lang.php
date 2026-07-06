@@ -16,6 +16,8 @@ $lang['Enabled: the AI server fetches images by URL and pushes results back via 
 $lang['Disabled: Piwigo uploads image files and polls the AI server for results (works on local or private installations).'] = 'Désactivé : Piwigo envoie les fichiers image et interroge le serveur IA pour récupérer les résultats (compatible avec les installations locales ou privées).';
 $lang['Description prefix'] = 'Préfixe de description';
 $lang['Text prepended to AI-generated descriptions.'] = 'Texte ajouté au début des descriptions générées par l\'IA.';
+$lang['Allow Piwigo AI to create new tags'] = 'Autoriser Piwigo AI à créer de nouveaux tags';
+$lang['Disable to reuse existing tags only.'] = 'Désactivez pour réutiliser uniquement les tags existants.';
 $lang['AI server URL'] = 'URL du serveur IA';
 $lang['URL of the AI server used for processing.'] = 'URL du serveur IA utilisé pour le traitement.';
 $lang['Credits owned'] = 'Crédits disponibles';

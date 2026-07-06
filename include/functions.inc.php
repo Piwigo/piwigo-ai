@@ -7,6 +7,11 @@ function p_ai_init()
 
   load_language('plugin.lang', P_AI_PATH);
   $conf['piwigo_ai'] = safe_unserialize($conf['piwigo_ai']);
+  if (!isset($conf['piwigo_ai']['allow_new_tags']))
+  {
+    $conf['piwigo_ai']['allow_new_tags'] = true;
+    conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
+  }
 
   // don't re-seed from the check_tickets worker request itself
   $is_check_tickets_request = ($_REQUEST['method'] ?? '') == 'pwg.ai.check_tickets';
@@ -46,6 +51,16 @@ function p_ai_check_account()
   return !empty($conf['piwigo_ai']['account_id']) || !empty($conf['piwigo_ai']['api_key']);
 }
 
+function p_ai_get_existing_tags()
+{
+  $query = '
+  SELECT id, name
+    FROM '.TAGS_TABLE.'
+    ORDER BY name ASC
+;';
+  return query2array($query);
+}
+
 function p_ai_analyze($image, $callback, $options = [])
 {
   global $conf;
@@ -70,6 +85,12 @@ function p_ai_analyze($image, $callback, $options = [])
     'language' => get_default_language(),
   );
 
+  if ($post_data['tagging'])
+  {
+    $post_data['allow_new_tags'] = filter_var($conf['piwigo_ai']['allow_new_tags'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    $post_data['existing_tags'] = json_encode(p_ai_get_existing_tags());
+  }
+
   if (null === $callback)
   {
     $mime_content_type = mime_content_type($image) ? mime_content_type($image) : 'application/octet-stream';
@@ -83,7 +104,6 @@ function p_ai_analyze($image, $callback, $options = [])
   $curl_options[CURLOPT_POSTFIELDS] = $post_data;
   curl_setopt_array($curl, $curl_options);
 
-  
   $response = curl_exec($curl);
 
   if (false === $response)

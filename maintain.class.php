@@ -10,6 +10,7 @@ class piwigo_ai_maintain extends PluginMaintain
     'url_server_ai' => 'https://ai.piwigo.net',
     'account_id' => null,
     'api_key' => null,
+    'allow_new_tags' => true,
   );
 
   function __construct($plugin_id)

@@ -36,6 +36,19 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
         value="{$P_AI_CONFIG.description_prefix}"  
       />
     </div>
+
+    <div class="mt-4">
+      <label class="switch">
+        <input type="checkbox" name="allow_new_tags" id="allow_new_tags"
+          {if $P_AI_CONFIG.allow_new_tags} checked {/if}
+        >
+        <span class="slider round"></span>
+      </label>
+      <label for="allow_new_tags" class="font-bold">
+        {'Allow Piwigo AI to create new tags'|translate}
+      </label>
+      <p class="text-xs">{'Disable to reuse existing tags only.'|translate}</p>
+    </div>
   </div>
 </div>
 <div class="savebar-footer justify-end!">
