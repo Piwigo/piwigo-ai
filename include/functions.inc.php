@@ -7,6 +7,11 @@ function p_ai_init()
 
   load_language('plugin.lang', P_AI_PATH);
   $conf['piwigo_ai'] = safe_unserialize($conf['piwigo_ai']);
+  if (!isset($conf['piwigo_ai']['allow_new_tags']))
+  {
+    $conf['piwigo_ai']['allow_new_tags'] = true;
+    conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
+  }
 
   // don't re-seed from the check_tickets worker request itself
   $is_check_tickets_request = ($_REQUEST['method'] ?? '') == 'pwg.ai.check_tickets';
@@ -46,6 +51,16 @@ function p_ai_check_account()
   return !empty($conf['piwigo_ai']['account_id']) || !empty($conf['piwigo_ai']['api_key']);
 }
 
+function p_ai_get_existing_tags()
+{
+  $query = '
+SELECT name
+  FROM '.TAGS_TABLE.'
+  ORDER BY name ASC
+;';
+  return query2array($query, null, 'name');
+}
+
 function p_ai_analyze($image, $callback, $options = [])
 {
   global $conf;
@@ -69,6 +84,12 @@ function p_ai_analyze($image, $callback, $options = [])
     'ocr' => $options['ocr'] ?? true,
     'language' => get_default_language(),
   );
+
+  if ($post_data['tagging'])
+  {
+    $post_data['allow_new_tags'] = filter_var($conf['piwigo_ai']['allow_new_tags'], FILTER_VALIDATE_BOOLEAN);
+    $post_data['existing_tags'] = json_encode(p_ai_get_existing_tags(), JSON_UNESCAPED_UNICODE);
+  }
 
   if (null === $callback)
   {
@@ -321,6 +342,8 @@ SELECT id
   $embeddings = array();
   $tags_by_image = array();
   $all_tag_names = array();
+  $new_tag_names = array();
+  $allow_new_tags_by_image = array();
 
   foreach ($tickets as $data)
   {
@@ -357,16 +380,14 @@ SELECT id
     $ocr = null;
     if (!empty($data['ocr']))
     {
-      $ocr = is_array($data['ocr'])
-        ? json_encode($data['ocr'], JSON_UNESCAPED_UNICODE)
-        : $data['ocr'];
+      $ocr = json_encode($data['ocr'], JSON_UNESCAPED_UNICODE);
       $ocr = pwg_db_real_escape_string($ocr);
     }
     $images_update[] = array(
       'id' => $image_id,
       'ocr' => $ocr,
       'ai_description' => !empty($data['description'])
-        ? pwg_db_real_escape_string($data['description'])
+        ? pwg_db_real_escape_string(stripslashes($data['description']))
         : null,
     );
 
@@ -380,22 +401,30 @@ SELECT id
       }
     }
 
-    // tags (names pre-escaped: tag_id_from_tag_name expects escaped input)
+    // tags
     if (!empty($data['tags']))
     {
+      $options = json_decode($row['options'] ?? '', true);
+      $allow_new_tags = !isset($options['allow_new_tags'])
+        || filter_var($options['allow_new_tags'], FILTER_VALIDATE_BOOLEAN);
       $names = array();
       foreach (explode(',', $data['tags']) as $tag_candidate)
       {
-        $name = pwg_db_real_escape_string(strip_tags(stripslashes(trim($tag_candidate))));
+        $name = strip_tags(stripslashes(trim($tag_candidate)));
         if ($name !== '')
         {
           $names[] = $name;
           $all_tag_names[$name] = true;
+          if ($allow_new_tags)
+          {
+            $new_tag_names[$name] = true;
+          }
         }
       }
       if (!empty($names))
       {
         $tags_by_image[$image_id] = $names;
+        $allow_new_tags_by_image[$image_id] = $allow_new_tags;
       }
     }
 
@@ -432,7 +461,24 @@ UPDATE `'.IMAGES_TABLE.'`
   if (!empty($tags_by_image))
   {
     $names = array_keys($all_tag_names);
-    $name_to_id = array_combine($names, get_tag_ids($names));
+    $quoted_names = array();
+    foreach ($names as $name)
+    {
+      $quoted_names[] = "'".pwg_db_real_escape_string($name)."'";
+    }
+    $existing_name_to_id = query2array('
+SELECT name, id
+  FROM '.TAGS_TABLE.'
+  WHERE name IN ('.implode(',', $quoted_names).')
+;', 'name', 'id');
+
+    $name_to_id = $existing_name_to_id;
+    if (!empty($new_tag_names))
+    {
+      $new_names = array_keys($new_tag_names);
+      $escaped_new_names = array_map('pwg_db_real_escape_string', $new_names);
+      $name_to_id += array_combine($new_names, get_tag_ids($escaped_new_names));
+    }
 
     $flag_ids = array();
     foreach ($tags_by_image as $image_id => $img_names)
@@ -440,10 +486,17 @@ UPDATE `'.IMAGES_TABLE.'`
       $img_tag_ids = array();
       foreach ($img_names as $n)
       {
-        if (isset($name_to_id[$n]))
+        if (isset($existing_name_to_id[$n]))
         {
-          $img_tag_ids[] = $name_to_id[$n];
-          $flag_ids[$name_to_id[$n]] = true;
+          $tag_id = $existing_name_to_id[$n];
+          $img_tag_ids[] = $tag_id;
+          $flag_ids[$tag_id] = true;
+        }
+        elseif (!empty($allow_new_tags_by_image[$image_id]) && isset($name_to_id[$n]))
+        {
+          $tag_id = $name_to_id[$n];
+          $img_tag_ids[] = $tag_id;
+          $flag_ids[$tag_id] = true;
         }
       }
       if (!empty($img_tag_ids))

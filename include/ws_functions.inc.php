@@ -22,7 +22,8 @@ function p_ai_add_methods($arr)
         'type' => WS_TYPE_INT|WS_TYPE_POSITIVE,
       ),
       'ocr' => array(
-        'default' => null
+        'default' => null,
+        'flags' => WS_PARAM_ACCEPT_ARRAY,
       ),
       'description' => array(
         'default' => null
@@ -58,6 +59,10 @@ function p_ai_add_methods($arr)
       ),
       'description_prefix' => array(
         'flags'=>WS_PARAM_OPTIONAL,
+      ),
+      'allow_new_tags' => array(
+        'flags' => WS_PARAM_OPTIONAL,
+        'type' => WS_TYPE_BOOL,
       ),
       'pwg_token' => array(),
     ),
@@ -239,6 +244,10 @@ function p_ws_ai_config($params)
     'is_accessible' => pwg_db_real_escape_string($params['is_accessible']) == 1 ? true : false,
     'description_prefix' => $prefix_desc,
   );
+  if (isset($params['allow_new_tags']))
+  {
+    $new_conf['allow_new_tags'] = filter_var($params['allow_new_tags'], FILTER_VALIDATE_BOOLEAN);
+  }
   conf_update_param('piwigo_ai', array_merge($conf['piwigo_ai'], $new_conf), true);
   return 'Configuration saved';
 }

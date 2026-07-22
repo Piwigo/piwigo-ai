@@ -41,7 +41,7 @@
       <strong>OCR</strong>
       {foreach from=$P_AI_IMG.ocr item=line}
         {* Ensure compatibility with the old format *}
-        <p class="my-1">{if isset($line.text)} {$line.text} {else} {$line} {/if}</p>
+        <p class="my-1">{if isset($line.text)}{$line.text|escape:html}{else}{$line|escape:html}{/if}</p>
       {/foreach}
     </div>
   {/if}

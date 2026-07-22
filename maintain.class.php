@@ -10,6 +10,7 @@ class piwigo_ai_maintain extends PluginMaintain
     'url_server_ai' => 'https://ai.piwigo.net',
     'account_id' => null,
     'api_key' => null,
+    'allow_new_tags' => true,
   );
 
   function __construct($plugin_id)
@@ -51,10 +52,16 @@ class piwigo_ai_maintain extends PluginMaintain
         unset($conf['piwigo_ai']['send_picture_file'],
         $conf['piwigo_ai']['ticket_callback']);
         $conf['piwigo_ai']['is_accessible'] = false;
-        conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
 
         p_ai_ping($this->default_conf);
       }
+
+      if (!isset($conf['piwigo_ai']['allow_new_tags']))
+      {
+        $conf['piwigo_ai']['allow_new_tags'] = true;
+      }
+      
+      conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
     }
 
     $query = pwg_query('SHOW COLUMNS FROM `'.IMAGES_TABLE.'` LIKE "ocr";');

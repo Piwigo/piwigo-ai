@@ -21,6 +21,7 @@ function p_show_error() {
 function p_ai_save() {
   p_ai_saving = true;
   const is_accessible = $('#is_accessible').prop('checked');
+  const allow_new_tags = $('#allow_new_tags').prop('checked');
   const description_prefix = $('#description_prefix').val();
 
   $.ajax({
@@ -31,6 +32,7 @@ function p_ai_save() {
       pwg_token: PWG_TOKEN,
       description_prefix,
       is_accessible,
+      allow_new_tags,
     },
     success: function(res) {
       if (res.stat === 'ok')
