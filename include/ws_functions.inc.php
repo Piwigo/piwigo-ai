@@ -59,6 +59,10 @@ function p_ai_add_methods($arr)
       'description_prefix' => array(
         'flags'=>WS_PARAM_OPTIONAL,
       ),
+      'display_ai_description' => array(
+        'flags' => WS_PARAM_OPTIONAL,
+        'type' => WS_TYPE_BOOL,
+      ),
       'pwg_token' => array(),
     ),
     'Change Piwigo AI configuration',
@@ -233,12 +237,18 @@ function p_ws_ai_config($params)
     return new PwgError(401, 'Access Denied');
   }
 
-  $prefix_desc = $params['description_prefix'] ? pwg_db_real_escape_string(strip_tags(stripslashes(trim($params['description_prefix'])))) : null;
+  $prefix_desc = !empty($params['description_prefix'])
+    ? strip_tags(stripslashes(trim($params['description_prefix'])))
+    : null;
 
   $new_conf = array(
     'is_accessible' => pwg_db_real_escape_string($params['is_accessible']) == 1 ? true : false,
     'description_prefix' => $prefix_desc,
   );
+  if (isset($params['display_ai_description']))
+  {
+    $new_conf['display_ai_description'] = filter_var($params['display_ai_description'], FILTER_VALIDATE_BOOLEAN);
+  }
   conf_update_param('piwigo_ai', array_merge($conf['piwigo_ai'], $new_conf), true);
   return 'Configuration saved';
 }

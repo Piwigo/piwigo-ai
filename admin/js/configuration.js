@@ -1,6 +1,14 @@
 let p_ai_saving = false;
 
 $(function() {
+  const $display_ai_description = $('#display_ai_description');
+  const toggle_description_prefix = function() {
+    $('#description_prefix_container').toggle($display_ai_description.prop('checked'));
+  };
+
+  toggle_description_prefix();
+  $display_ai_description.on('change', toggle_description_prefix);
+
   $('#p_ai_save_settings').on('click', function() {
     if (p_ai_saving) return;
     p_ai_save();
@@ -21,6 +29,7 @@ function p_show_error() {
 function p_ai_save() {
   p_ai_saving = true;
   const is_accessible = $('#is_accessible').prop('checked');
+  const display_ai_description = $('#display_ai_description').prop('checked');
   const description_prefix = $('#description_prefix').val();
 
   $.ajax({
@@ -31,6 +40,7 @@ function p_ai_save() {
       pwg_token: PWG_TOKEN,
       description_prefix,
       is_accessible,
+      display_ai_description,
     },
     success: function(res) {
       if (res.stat === 'ok')

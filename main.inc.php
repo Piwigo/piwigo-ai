@@ -79,6 +79,7 @@ $events_functions = P_AI_PATH.'include/events.inc.php';
 
 add_event_handler('ws_add_methods', 'p_ai_add_methods', EVENT_HANDLER_PRIORITY_NEUTRAL, $ws_functions);
 add_event_handler('loc_end_add_uploaded_file', 'p_ai_loc_end_add_uploaded_file', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_functions);
+add_event_handler('loc_end_picture', 'p_ai_loc_end_picture', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_functions);
 
 if (defined('IN_ADMIN'))
 {

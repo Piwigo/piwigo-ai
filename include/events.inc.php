@@ -23,8 +23,36 @@ function p_ai_loc_end_add_uploaded_file(array $image_info)
   if (isset($response['errors']))
   {
     $logger->error('[PIWIGO AI]['.__FUNCTION__.'] Error : ' . $response['errors']);
+    header('X-Piwigo-AI-Error: '.rawurlencode($response['errors']));
+  }
+}
+
+/**
+ * `Piwigo AI` : loc_end_picture
+ */
+function p_ai_loc_end_picture()
+{
+  global $conf, $picture, $template;
+
+  if (empty($conf['piwigo_ai']['display_ai_description'])
+    || empty($picture['current']['ai_description']))
+  {
+    return;
   }
 
-  // TODO: found a way to pass some infos during upload
-  // for example to show a toaster when an error occured from the AI server
+  $prefix = trim((string) ($conf['piwigo_ai']['description_prefix'] ?? ''));
+  $ai_description = trim($picture['current']['ai_description']);
+  if ($prefix !== '')
+  {
+    $ai_description = $prefix.' '.$ai_description;
+  }
+
+  $ai_description = pwg_nl2br(htmlspecialchars($ai_description, ENT_QUOTES, 'UTF-8'));
+  $description = $template->get_template_vars('COMMENT_IMG');
+  if (!empty($description))
+  {
+    $ai_description = $description.'<br><br>'.$ai_description;
+  }
+
+  $template->assign('COMMENT_IMG', $ai_description);
 }

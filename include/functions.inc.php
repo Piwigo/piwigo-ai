@@ -7,6 +7,16 @@ function p_ai_init()
 
   load_language('plugin.lang', P_AI_PATH);
   $conf['piwigo_ai'] = safe_unserialize($conf['piwigo_ai']);
+  $config_updated = false;
+  if (!isset($conf['piwigo_ai']['display_ai_description']))
+  {
+    $conf['piwigo_ai']['display_ai_description'] = false;
+    $config_updated = true;
+  }
+  if ($config_updated)
+  {
+    conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
+  }
 
   // don't re-seed from the check_tickets worker request itself
   $is_check_tickets_request = ($_REQUEST['method'] ?? '') == 'pwg.ai.check_tickets';

@@ -11,6 +11,17 @@
   const $ocr = $('#p_ai_ocr');
   if (!$ocr.length) return;
 
+  const $ocrToggle = $('#p_ai_ocr_toggle');
+  const $ocrContent = $('#p_ai_ocr_content');
+  $ocrToggle.on('click', function(event) {
+    event.preventDefault();
+    const expanded = $ocrToggle.attr('aria-expanded') === 'true';
+    $ocrToggle.attr('aria-expanded', !expanded);
+    $ocrContent.toggleClass('hidden', expanded);
+    $ocrToggle.find('.p-ai-ocr-show').toggleClass('hidden', !expanded);
+    $ocrToggle.find('.p-ai-ocr-hide').toggleClass('hidden', expanded);
+  });
+
   const $preview = $('#picture-preview');
   const $wrapper = $('<div>').css({
     display: 'flex',
@@ -35,14 +46,22 @@
   <textarea id="p_ai_description" class="description" readonly="readonly">{$P_AI_IMG.ai_description|default:''|escape:html}</textarea>
 </p>
 
+{if !empty($P_AI_IMG.ocr)}
 <div id="p_ai_ocr" class="hidden">
-  {if !empty($P_AI_IMG.ocr)}
-    <div class="mt-3 text-sm text-gray-600 pb-16">
-      <strong>OCR</strong>
-      {foreach from=$P_AI_IMG.ocr item=line}
-        {* Ensure compatibility with the old format *}
-        <p class="my-1">{if isset($line.text)} {$line.text} {else} {$line} {/if}</p>
-      {/foreach}
+  <div class="mt-3 text-sm text-gray-600 pb-16">
+    <a href="#" id="p_ai_ocr_toggle" aria-expanded="false" aria-controls="p_ai_ocr_content">
+      <span class="p-ai-ocr-show">
+        {'Show text contained in the image'|translate} <i class="icon-down-open" aria-hidden="true"></i>
+      </span>
+      <span class="p-ai-ocr-hide hidden">
+        {'Hide text contained in the image'|translate} <i class="icon-down-open" aria-hidden="true" style="display:inline-block; transform:rotate(180deg)"></i>
+      </span>
+    </a>
+    <div id="p_ai_ocr_content" class="hidden">
+    {foreach from=$P_AI_IMG.ocr item=line}
+      <p class="my-1">{$line|escape:html}</p>
+    {/foreach}
     </div>
-  {/if}
+  </div>
 </div>
+{/if}
