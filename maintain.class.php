@@ -11,6 +11,7 @@ class piwigo_ai_maintain extends PluginMaintain
     'account_id' => null,
     'api_key' => null,
     'allow_new_tags' => true,
+    'display_ai_description' => false,
   );
 
   function __construct($plugin_id)
@@ -59,6 +60,10 @@ class piwigo_ai_maintain extends PluginMaintain
       if (!isset($conf['piwigo_ai']['allow_new_tags']))
       {
         $conf['piwigo_ai']['allow_new_tags'] = true;
+      }
+      if (!isset($conf['piwigo_ai']['display_ai_description']))
+      {
+        $conf['piwigo_ai']['display_ai_description'] = false;
       }
       
       conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);

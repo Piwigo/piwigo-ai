@@ -27,13 +27,25 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
       <p class="text-xs">{'Enable if the AI server can reach your Piwigo over the network.'|translate}</p>
     </div>
 
-    <div class="mt-3 flex flex-col text-start">
-      <label for="description_prefix" class="font-bold">{"Description prefix"|translate|escape:html}</label>
-      <p class="text-xs italic">{'Text prepended to AI-generated descriptions.'|translate}</p>
+    <div class="mt-4">
+      <label class="switch">
+        <input type="checkbox" name="display_ai_description" id="display_ai_description"
+          {if $P_AI_CONFIG.display_ai_description} checked {/if}
+        >
+        <span class="slider round"></span>
+      </label>
+      <label for="display_ai_description" class="font-bold">
+        {'Display AI descriptions in the gallery'|translate}
+      </label>
+      <p class="text-xs">{'Enable to display AI-generated descriptions after the regular photo description.'|translate}</p>
+    </div>
 
+    <div id="description_prefix_container" class="mt-3 flex flex-col text-start{if !$P_AI_CONFIG.display_ai_description} hidden{/if}">
+      <label for="description_prefix" class="font-bold">{"Description prefix"|translate|escape:html}</label>
+      <p class="text-xs italic">{'Optional text displayed before AI-generated descriptions.'|translate}</p>
       <input class="p-ai-input" 
         id="description_prefix" name="description_prefix" type="text" 
-        value="{$P_AI_CONFIG.description_prefix}"  
+        value="{$P_AI_CONFIG.description_prefix|default:''|escape:html}"
       />
     </div>
 
