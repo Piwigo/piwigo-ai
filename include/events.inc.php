@@ -56,3 +56,27 @@ function p_ai_loc_end_picture()
 
   $template->assign('COMMENT_IMG', $ai_description);
 }
+
+/**
+ * `Piwigo AI` : loc_end_index
+ */
+function p_ai_loc_end_index()
+{
+  global $page, $template;
+
+  if ('search' != $page['section'] or !isset($page['search_details'])) return;
+
+  $template->set_filename('p_ai_search_filters', P_AI_PATH.'template/search_filters.inc.tpl');
+  $template->concat('PLUGIN_INDEX_CONTENT_END', $template->parse('p_ai_search_filters', true));
+}
+
+/**
+ * `Piwigo AI` : get_search_allwords_fields
+ */
+function p_ai_add_search_allwords_fields($fields)
+{
+  $fields[] = 'ai_description';
+  $fields[] = 'ocr';
+
+  return $fields;
+}
