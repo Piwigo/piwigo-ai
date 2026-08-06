@@ -367,10 +367,7 @@ SELECT id
     $ocr = null;
     if (!empty($data['ocr']))
     {
-      $ocr = is_array($data['ocr'])
-        ? json_encode($data['ocr'], JSON_UNESCAPED_UNICODE)
-        : $data['ocr'];
-      $ocr = pwg_db_real_escape_string($ocr);
+      $ocr = pwg_db_real_escape_string($data['ocr']);
     }
     $images_update[] = array(
       'id' => $image_id,

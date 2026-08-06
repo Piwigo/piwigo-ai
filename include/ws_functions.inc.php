@@ -210,6 +210,17 @@ function p_ws_ai_analyze($params)
     return new PwgError(401, 'Invalid account_id');
   }
 
+  // piwigo ws applies addslashes() to every param
+  // stripslashes before p_ai_save_ticket, so the callback path matches the (clean) pull path
+  // p_ai_save_tickets then escapes exactly once for sql
+  foreach (['ocr', 'description'] as $field)
+  {
+    if (isset($params[$field]) && is_string($params[$field]))
+    {
+      $params[$field] = stripslashes($params[$field]);
+    }
+  }
+
   $save_ticket = p_ai_save_ticket($params);
 
   if (isset($save_ticket['errors']))
