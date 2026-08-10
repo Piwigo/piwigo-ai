@@ -23,8 +23,9 @@ function p_ai_loc_end_add_uploaded_file(array $image_info)
   if (isset($response['errors']))
   {
     $logger->error('[PIWIGO AI]['.__FUNCTION__.'] Error : ' . $response['errors']);
-    header('X-Piwigo-AI-Error: '.rawurlencode($response['errors']));
   }
+  // TODO: found a way to pass some infos during upload
+  // for example to show a toaster when an error occured from the AI server
 }
 
 /**
@@ -40,14 +41,11 @@ function p_ai_loc_end_picture()
     return;
   }
 
-  $prefix = trim((string) ($conf['piwigo_ai']['description_prefix'] ?? ''));
-  $ai_description = trim($picture['current']['ai_description']);
   if ($prefix !== '')
   {
     $ai_description = $prefix.' '.$ai_description;
   }
 
-  $ai_description = pwg_nl2br(htmlspecialchars($ai_description, ENT_QUOTES, 'UTF-8'));
   $description = $template->get_template_vars('COMMENT_IMG');
   if (!empty($description))
   {

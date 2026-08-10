@@ -210,6 +210,17 @@ function p_ws_ai_analyze($params)
     return new PwgError(401, 'Invalid account_id');
   }
 
+  // piwigo ws applies addslashes() to every param
+  // stripslashes before p_ai_save_ticket, so the callback path matches the (clean) pull path
+  // p_ai_save_tickets then escapes exactly once for sql
+  foreach (['ocr', 'description'] as $field)
+  {
+    if (isset($params[$field]) && is_string($params[$field]))
+    {
+      $params[$field] = stripslashes($params[$field]);
+    }
+  }
+
   $save_ticket = p_ai_save_ticket($params);
 
   if (isset($save_ticket['errors']))
@@ -247,7 +258,7 @@ function p_ws_ai_config($params)
   );
   if (isset($params['display_ai_description']))
   {
-    $new_conf['display_ai_description'] = filter_var($params['display_ai_description'], FILTER_VALIDATE_BOOLEAN);
+    $new_conf['display_ai_description'] = $params['display_ai_description'];
   }
   conf_update_param('piwigo_ai', array_merge($conf['piwigo_ai'], $new_conf), true);
   return 'Configuration saved';

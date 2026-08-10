@@ -40,7 +40,7 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
       <p class="text-xs">{'Enable to display AI-generated descriptions after the regular photo description.'|translate}</p>
     </div>
 
-    <div id="description_prefix_container" class="mt-3 flex flex-col text-start{if !$P_AI_CONFIG.display_ai_description} hidden{/if}">
+    <div id="description_prefix_container" class="sub-setting flex flex-col text-start{if !$P_AI_CONFIG.display_ai_description} hidden{/if}">
       <label for="description_prefix" class="font-bold">{"Description prefix"|translate|escape:html}</label>
       <p class="text-xs italic">{'Optional text displayed before AI-generated descriptions.'|translate}</p>
       <input class="p-ai-input" 
