@@ -41,6 +41,8 @@ function p_ai_loc_end_picture()
     return;
   }
 
+  $prefix = trim((string) ($conf['piwigo_ai']['description_prefix'] ?? ''));
+  $ai_description = trim($picture['current']['ai_description']);
   if ($prefix !== '')
   {
     $ai_description = $prefix.' '.$ai_description;
