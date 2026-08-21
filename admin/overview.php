@@ -16,7 +16,7 @@ global $template, $page, $conf;
 $compatibility = p_ai_check_db_compatibility();
 if (!$compatibility)
 {
-  $page['messages'][] = l10n('<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.7+ or MySQL 9+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>', pwg_get_db_version());
+  $page['messages'][] = l10n('<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.8.2+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>', pwg_get_db_version());
 }
 
 $statistiques = p_ai_get_stats();

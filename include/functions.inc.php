@@ -66,6 +66,7 @@ function p_ai_analyze($image, $callback, $options = [])
     'callback' => $callback,
     'caption' => $options['caption'] ?? true,
     'tagging' => $options['tagging'] ?? true,
+    'allow_new_tags' => $options['allow_new_tags'] ?? $conf['piwigo_ai']['allow_new_tags'] ?? true,
     'ocr' => $options['ocr'] ?? true,
     'language' => get_default_language(),
   );
@@ -161,6 +162,142 @@ function p_ai_post(string $url, array $data, int $timeout = 10)
   return p_ai_decode_response($res);
 }
 
+function p_ai_decode_json_array($value)
+{
+  if (is_array($value))
+  {
+    return $value;
+  }
+
+  if (!is_string($value))
+  {
+    return null;
+  }
+
+  $decoded = json_decode($value, true);
+  if (is_array($decoded))
+  {
+    return $decoded;
+  }
+
+  $decoded = json_decode(stripslashes($value), true);
+  return is_array($decoded) ? $decoded : null;
+}
+
+function p_ai_is_valid_embedding($embedding)
+{
+  if (!is_array($embedding) || count($embedding) !== P_AI_EMBEDDING_DIMENSION)
+  {
+    return false;
+  }
+
+  foreach ($embedding as $value)
+  {
+    if (!is_numeric($value))
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function p_ai_encode_embedding($embedding)
+{
+  return pwg_db_real_escape_string(json_encode(array_map('floatval', array_values($embedding))));
+}
+
+function p_ai_store_tag_embedding($tag_id, $embedding)
+{
+  if (!p_ai_is_valid_embedding($embedding))
+  {
+    return false;
+  }
+
+  $embedding = p_ai_encode_embedding($embedding);
+  pwg_query('
+UPDATE `'.TAGS_TABLE.'`
+  SET `embedding` = VEC_FromText(\''.$embedding.'\')
+  WHERE id = '.(int)$tag_id.'
+;');
+
+  return true;
+}
+
+function p_ai_create_tag_embedding($tag)
+{
+  global $logger;
+
+  if (!p_ai_check_db_compatibility()
+    || empty($tag['id'])
+    || empty($tag['name']))
+  {
+    return;
+  }
+
+  if (!p_ai_migrate_db())
+  {
+    $logger->error('[PIWIGO AI]['.__FUNCTION__.'] Unable to migrate legacy embedding columns');
+    return;
+  }
+
+  $text = trim(strip_tags(stripslashes($tag['name'])));
+  $result = p_ai_post(
+    '/embedding/text',
+    array('texts' => array($text)),
+    60
+  );
+
+  $embedding = $result['embeddings'][0]['embedding'] ?? null;
+  if (($result['embeddings'][0]['text'] ?? null) !== $text
+    || !p_ai_store_tag_embedding($tag['id'], $embedding))
+  {
+    $logger->error('[PIWIGO AI]['.__FUNCTION__.'] Unable to save tag embedding for tag '.$tag['id']);
+  }
+}
+
+function p_ai_sync_tag_embeddings()
+{
+  static $is_synced = false;
+
+  if ($is_synced)
+  {
+    return true;
+  }
+
+  $tags = query2array('
+SELECT id, name
+  FROM `'.TAGS_TABLE.'`
+  WHERE embedding IS NULL
+    AND TRIM(name) <> \'\'
+  ORDER BY id
+;');
+
+  foreach (array_chunk($tags, 200) as $batch)
+  {
+    $texts = array_map('trim', array_column($batch, 'name'));
+    $result = p_ai_post('/embedding/text', array('texts' => $texts), 120);
+    $embeddings = $result['embeddings'] ?? null;
+    if (!is_array($embeddings) || count($embeddings) !== count($batch))
+    {
+      return array('errors' => 'Unable to generate existing tag embeddings');
+    }
+
+    foreach ($batch as $key => $tag)
+    {
+      $embedding = $embeddings[$key]['embedding'] ?? null;
+      if (($embeddings[$key]['text'] ?? null) !== trim($tag['name'])
+        || !p_ai_store_tag_embedding($tag['id'], $embedding))
+      {
+        return array('errors' => 'Unable to save existing tag embeddings');
+      }
+    }
+  }
+
+  $is_synced = true;
+  return true;
+}
+
 function p_ai_default_headers()
 {
   global $conf;
@@ -182,6 +319,25 @@ function p_ai_default_headers()
 function p_ai_submit_image(array $image_info, array $options)
 {
   global $conf;
+
+  if (!empty($options['tagging']))
+  {
+    if (!p_ai_check_db_compatibility())
+    {
+      return array('errors' => l10n('Contextual tagging requires MariaDB 11.8.2 or newer.'));
+    }
+
+    if (!p_ai_migrate_db())
+    {
+      return array('errors' => l10n('Unable to convert legacy embedding columns to MariaDB vectors without losing data.'));
+    }
+
+    $sync = p_ai_sync_tag_embeddings();
+    if (is_array($sync) && isset($sync['errors']))
+    {
+      return $sync;
+    }
+  }
 
   $abs_root = get_absolute_root_url();
 
@@ -256,6 +412,134 @@ SELECT *
   return query2array($query, 'ticket_id');
 }
 
+function p_ai_create_tag_with_embedding($name, $embedding)
+{
+  global $page;
+
+  $name = pwg_db_real_escape_string($name);
+  single_insert(
+    TAGS_TABLE,
+    array(
+      'name' => $name,
+      'url_name' => trigger_change('render_tag_url', $name),
+      'ai' => 'true',
+    )
+  );
+
+  $tag_id = pwg_db_insert_id(TAGS_TABLE);
+  p_ai_store_tag_embedding($tag_id, $embedding);
+  $page['tag_id_from_tag_name_cache'][$name] = $tag_id;
+  invalidate_user_cache_nb_tags();
+
+  return $tag_id;
+}
+
+function p_ai_select_tags($image_embedding, $tag_candidates = array())
+{
+  if (!p_ai_is_valid_embedding($image_embedding))
+  {
+    return array();
+  }
+
+  $candidates_by_name = array();
+  foreach ($tag_candidates as $candidate)
+  {
+    if (!is_array($candidate) || empty($candidate['name'])
+      || !p_ai_is_valid_embedding($candidate['embedding'] ?? null))
+    {
+      continue;
+    }
+
+    $name = strip_tags($candidate['name']);
+    if ($name !== '')
+    {
+      $candidate['name'] = $name;
+      $candidates_by_name[$name] = $candidate;
+    }
+  }
+  $tag_candidates = array_values($candidates_by_name);
+
+  $existing_by_candidate = array();
+  if (!empty($tag_candidates))
+  {
+    $candidate_names = array();
+    foreach ($tag_candidates as $key => $candidate)
+    {
+      $name = pwg_db_real_escape_string($candidate['name']);
+      $url_name = pwg_db_real_escape_string(trigger_change('render_tag_url', $name));
+      $candidate_names[] = 'SELECT '.$key.' AS candidate_key,
+             \''.$name.'\' AS name, \''.$url_name.'\' AS url_name';
+    }
+
+    $existing_by_candidate = query2array('
+SELECT t.id, candidates.candidate_key
+  FROM `'.TAGS_TABLE.'` AS t
+  INNER JOIN ('.implode(' UNION ALL ', $candidate_names).') AS candidates
+    ON candidates.name = t.name OR candidates.url_name = t.url_name
+  ORDER BY candidates.candidate_key, t.name = candidates.name DESC
+;', 'candidate_key');
+  }
+
+  $represented_ids = array();
+  foreach ($existing_by_candidate as $tag)
+  {
+    $represented_ids[] = (int)$tag['id'];
+  }
+
+  $pool = '
+SELECT id, name, embedding, NULL AS candidate_key
+  FROM `'.TAGS_TABLE.'`
+  WHERE embedding IS NOT NULL';
+  if (!empty($represented_ids))
+  {
+    $pool .= '
+    AND id NOT IN ('.implode(',', $represented_ids).')';
+  }
+
+  foreach ($tag_candidates as $key => $candidate)
+  {
+    $tag_id = isset($existing_by_candidate[$key])
+      ? (int)$existing_by_candidate[$key]['id']
+      : 'NULL';
+    $embedding = p_ai_encode_embedding($candidate['embedding']);
+    $pool .= '
+UNION ALL
+SELECT '.$tag_id.', \''.pwg_db_real_escape_string($candidate['name']).'\',
+       VEC_FromText(\''.$embedding.'\'), '.$key;
+  }
+
+  $image_embedding = p_ai_encode_embedding($image_embedding);
+  $selected = query2array('
+SELECT id, name, candidate_key, score
+  FROM (
+    SELECT id, name, candidate_key,
+           1 - VEC_DISTANCE_COSINE(embedding, VEC_FromText(\''.$image_embedding.'\')) AS score
+      FROM ('.$pool.') AS tag_pool
+  ) AS ranked_tags
+  WHERE score >= '.P_AI_TAG_SIMILARITY_THRESHOLD.'
+  ORDER BY score DESC, id IS NULL
+  LIMIT '.P_AI_TAG_LIMIT.'
+;');
+
+  $tag_ids = array();
+  foreach ($selected as $tag)
+  {
+    $tag_id = !empty($tag['id']) ? (int)$tag['id'] : null;
+    if (is_null($tag_id) && isset($tag_candidates[$tag['candidate_key']]))
+    {
+      $candidate = $tag_candidates[$tag['candidate_key']];
+      $tag_id = p_ai_create_tag_with_embedding($candidate['name'], $candidate['embedding']);
+    }
+
+    if (!is_null($tag_id))
+    {
+      $tag_ids[$tag_id] = true;
+    }
+  }
+
+  return array_keys($tag_ids);
+}
+
 // single-ticket wrapper for the callback path (pwg.ai.analyze)
 function p_ai_save_ticket($data)
 {
@@ -294,7 +578,6 @@ SELECT *
   }
 
   $is_compatible = p_ai_check_db_compatibility();
-  $vec_fn = p_ai_is_mariadb() ? 'VEC_FromText' : 'STRING_TO_VECTOR';
 
   // which target images still exist? (one query, for the completed tickets)
   $image_ids = array();
@@ -319,8 +602,8 @@ SELECT id
   $tickets_completed = array();
   $tickets_failed = array();
   $embeddings = array();
-  $tags_by_image = array();
-  $all_tag_names = array();
+  $image_embeddings = array();
+  $tag_candidates_by_image = array();
 
   foreach ($tickets as $data)
   {
@@ -353,6 +636,8 @@ SELECT id
       continue;
     }
 
+    $options = json_decode(stripslashes($row['options']), true) ?: array();
+
     // image columns (mass_updates expects pre-escaped values)
     $ocr = null;
     if (!empty($data['ocr']))
@@ -370,30 +655,38 @@ SELECT id
     // embedding (per-row: needs a SQL function, unfit for mass_updates)
     if (!empty($data['embedding']) && $is_compatible)
     {
-      $decoded = json_decode($data['embedding'], true);
-      if (is_array($decoded))
+      $decoded = p_ai_decode_json_array($data['embedding']);
+      if (p_ai_is_valid_embedding($decoded))
       {
-        $embeddings[$image_id] = pwg_db_real_escape_string($data['embedding']);
+        $embeddings[$image_id] = p_ai_encode_embedding($decoded);
+        $image_embeddings[$image_id] = $decoded;
       }
     }
 
-    // tags (names pre-escaped: tag_id_from_tag_name expects escaped input)
-    if (!empty($data['tags']))
+    if (!empty($options['tagging']))
     {
-      $names = array();
-      foreach (explode(',', $data['tags']) as $tag_candidate)
+      if (!isset($image_embeddings[$image_id]))
       {
-        $name = pwg_db_real_escape_string(strip_tags(stripslashes(trim($tag_candidate))));
-        if ($name !== '')
+        $tickets_failed[] = array(
+          'ticket_id' => pwg_db_real_escape_string($tid),
+          'cost' => $data['cost'] ?? null,
+          'failed_message' => pwg_db_real_escape_string('Invalid or incompatible embedding result'),
+          'status' => 'failed',
+        );
+        $results[$tid] = true;
+        continue;
+      }
+
+      $tag_candidates = array();
+      if (!empty($data['tag_candidates']))
+      {
+        $decoded = p_ai_decode_json_array($data['tag_candidates']);
+        if (is_array($decoded))
         {
-          $names[] = $name;
-          $all_tag_names[$name] = true;
+          $tag_candidates = $decoded;
         }
       }
-      if (!empty($names))
-      {
-        $tags_by_image[$image_id] = $names;
-      }
+      $tag_candidates_by_image[$image_id] = $tag_candidates;
     }
 
     $tickets_completed[] = array(
@@ -420,41 +713,22 @@ SELECT id
   {
     pwg_query('
 UPDATE `'.IMAGES_TABLE.'`
-  SET `embedding` = '.$vec_fn.'(\''.$emb.'\')
+  SET `embedding` = VEC_FromText(\''.$emb.'\')
   WHERE id = '.$image_id.'
 ;');
   }
 
-  // tags: resolve every name once, associate per image, flag them all at once
-  if (!empty($tags_by_image))
+  foreach ($tag_candidates_by_image as $image_id => $tag_candidates)
   {
-    $names = array_keys($all_tag_names);
-    $name_to_id = array_combine($names, get_tag_ids($names));
-
-    $flag_ids = array();
-    foreach ($tags_by_image as $image_id => $img_names)
+    if (!isset($image_embeddings[$image_id]))
     {
-      $img_tag_ids = array();
-      foreach ($img_names as $n)
-      {
-        if (isset($name_to_id[$n]))
-        {
-          $img_tag_ids[] = $name_to_id[$n];
-          $flag_ids[$name_to_id[$n]] = true;
-        }
-      }
-      if (!empty($img_tag_ids))
-      {
-        add_tags($img_tag_ids, array($image_id));
-      }
+      continue;
     }
-    if (!empty($flag_ids))
+
+    $selected_tag_ids = p_ai_select_tags($image_embeddings[$image_id], $tag_candidates);
+    if (!empty($selected_tag_ids))
     {
-      pwg_query('
-UPDATE `'.TAGS_TABLE.'`
-  SET `ai` = \'true\'
-  WHERE id IN ('.implode(',', array_keys($flag_ids)).')
-;');
+      add_tags($selected_tag_ids, array($image_id));
     }
   }
 
@@ -490,23 +764,11 @@ function p_ai_check_db_compatibility($force = false)
 
   $db_version =  pwg_get_db_version();
   $version = p_ai_parse_db_version($db_version);
-  $is_mariadb = p_ai_is_mariadb($db_version);
-
-  if ($is_mariadb) {
-    $is_compatible = version_compare($version, '11.7.0', '>=');
-  }
-  else
-  {
-    $is_compatible =  version_compare($version, '9.0.0', '>=');
-  }
+  $is_compatible = stripos($db_version, 'MariaDB') !== false
+    && version_compare($version, '11.8.2', '>=');
 
   conf_update_param('piwigo_ai_db_compatibility', $is_compatible, true);
   return $is_compatible;
-}
-
-function p_ai_is_mariadb($db_version = null)
-{
-  return stripos($db_version ?? pwg_get_db_version(), 'MariaDB') !== false;
 }
 
 function p_ai_parse_db_version($db_version)
@@ -519,19 +781,39 @@ function p_ai_parse_db_version($db_version)
 
 function p_ai_migrate_db()
 {
-  if (!p_ai_check_db_compatibility(true)) return;
+  if (!p_ai_check_db_compatibility()) return false;
   
   $query = pwg_query('SHOW COLUMNS FROM `'.IMAGES_TABLE.'` LIKE "embedding";');
   if (pwg_db_num_rows($query))
   {
-    pwg_query('ALTER TABLE `'.IMAGES_TABLE.'` MODIFY `embedding` VECTOR(512) NULL DEFAULT NULL;');
+    $column = pwg_db_fetch_assoc($query);
+    if (strtolower($column['Type']) !== 'vector(768)')
+    {
+      $values = query2array('SELECT COUNT(*) AS count FROM `'.IMAGES_TABLE.'` WHERE `embedding` IS NOT NULL;');
+      if ($values[0]['count'] > 0)
+      {
+        return false;
+      }
+      pwg_query('ALTER TABLE `'.IMAGES_TABLE.'` MODIFY `embedding` VECTOR(768) NULL DEFAULT NULL;');
+    }
   }
 
   $query = pwg_query('SHOW COLUMNS FROM `'.TAGS_TABLE.'` LIKE "embedding";');
   if (pwg_db_num_rows($query))
   {
-    pwg_query('ALTER TABLE `'.TAGS_TABLE.'` MODIFY `embedding` VECTOR(512) NULL DEFAULT NULL;');
+    $column = pwg_db_fetch_assoc($query);
+    if (strtolower($column['Type']) !== 'vector(768)')
+    {
+      $values = query2array('SELECT COUNT(*) AS count FROM `'.TAGS_TABLE.'` WHERE `embedding` IS NOT NULL;');
+      if ($values[0]['count'] > 0)
+      {
+        return false;
+      }
+      pwg_query('ALTER TABLE `'.TAGS_TABLE.'` MODIFY `embedding` VECTOR(768) NULL DEFAULT NULL;');
+    }
   }
+
+  return true;
 }
 
 function p_ai_ping($default_conf)

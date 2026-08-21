@@ -29,6 +29,7 @@ function p_show_error() {
 function p_ai_save() {
   p_ai_saving = true;
   const is_accessible = $('#is_accessible').prop('checked');
+  const allow_new_tags = $('#allow_new_tags').prop('checked');
   const display_ai_description = $('#display_ai_description').prop('checked');
   const description_prefix = $('#description_prefix').val();
 
@@ -41,6 +42,7 @@ function p_ai_save() {
       description_prefix,
       is_accessible,
       display_ai_description,
+      allow_new_tags,
     },
     success: function(res) {
       if (res.stat === 'ok')

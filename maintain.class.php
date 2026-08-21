@@ -11,6 +11,7 @@ class piwigo_ai_maintain extends PluginMaintain
     'account_id' => null,
     'api_key' => null,
     'display_ai_description' => false,
+    'allow_new_tags' => true,
   );
 
   function __construct($plugin_id)
@@ -30,9 +31,9 @@ class piwigo_ai_maintain extends PluginMaintain
     global $conf;
 
     include_once(PHPWG_PLUGINS_PATH . basename(dirname(__FILE__)) . '/include/functions.inc.php');
-    $is_compatible = p_ai_check_db_compatibility();
+    $is_compatible = p_ai_check_db_compatibility(true);
     conf_update_param('piwigo_ai_db_compatibility', $is_compatible, true);
-    $type = $is_compatible ? 'VECTOR(512)' : 'LONGTEXT';
+    $type = $is_compatible ? 'VECTOR(768)' : 'LONGTEXT';
 
     if (empty($conf['piwigo_ai']))
     {
@@ -52,7 +53,6 @@ class piwigo_ai_maintain extends PluginMaintain
         unset($conf['piwigo_ai']['send_picture_file'],
         $conf['piwigo_ai']['ticket_callback']);
         $conf['piwigo_ai']['is_accessible'] = false;
-        conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
 
         p_ai_ping($this->default_conf);
       }
@@ -60,6 +60,11 @@ class piwigo_ai_maintain extends PluginMaintain
       if (!isset($conf['piwigo_ai']['display_ai_description']))
       {
         $conf['piwigo_ai']['display_ai_description'] = false;
+      }
+
+      if (!isset($conf['piwigo_ai']['allow_new_tags']))
+      {
+        $conf['piwigo_ai']['allow_new_tags'] = true;
       }
       
       conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
@@ -94,6 +99,8 @@ class piwigo_ai_maintain extends PluginMaintain
     {
       pwg_query('ALTER TABLE `'.TAGS_TABLE.'` ADD `embedding` '. $type .' NULL DEFAULT NULL;');
     }
+
+    p_ai_migrate_db();
 
     pwg_query('
 CREATE TABLE IF NOT EXISTS `'. $this->table .'` (

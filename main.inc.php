@@ -34,6 +34,9 @@ define('P_AI_PATH', PHPWG_PLUGINS_PATH . P_AI_ID . '/');
 define('P_AI_REALPATH', realpath(P_AI_PATH));
 define('P_AI_ADMIN', get_root_url() . 'admin.php?page=plugin-' . P_AI_ID);
 define('P_AI_TICKETS_TABLE',   $prefixeTable . 'ai_tickets');
+define('P_AI_EMBEDDING_DIMENSION', 768);
+define('P_AI_TAG_SIMILARITY_THRESHOLD', 0.07);
+define('P_AI_TAG_LIMIT', 5);
 
 // +-----------------------------------------------------------------------+
 // | Init Piwigo AI Plugin                                                 |
@@ -73,6 +76,8 @@ if ($is_plugin_outdated)
 }
 
 add_event_handler('init', 'p_ai_init');
+add_event_handler('create_tag', 'p_ai_create_tag_embedding');
+add_event_handler('duplicate_tag', 'p_ai_create_tag_embedding');
 
 $ws_functions = P_AI_PATH.'include/ws_functions.inc.php';
 $events_functions = P_AI_PATH.'include/events.inc.php';

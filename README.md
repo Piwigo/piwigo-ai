@@ -14,9 +14,7 @@ Transform your Piwigo gallery into an AI-powered smart platform!
 
 ## Prerequisites
 - **PHP**: 8.4 minimum
-- **Database** (one of the following):
-  - MariaDB: 11.7 minimum, 11.8 recommended
-  - MySQL: 9.0 minimum
+- **Database**: MariaDB 11.8.2 minimum
 
 ## Installation
 ### For Users 
@@ -56,4 +54,3 @@ pnpm run css:watch
 or
 npx @tailwindcss/cli -i css/input.css -o css/output.css --minify --watch
 ```
-

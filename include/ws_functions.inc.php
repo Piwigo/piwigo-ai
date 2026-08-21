@@ -27,7 +27,7 @@ function p_ai_add_methods($arr)
       'description' => array(
         'default' => null
       ),
-      'tags' => array(
+      'tag_candidates' => array(
         'default' => null
       ),
       'embedding' => array(
@@ -60,6 +60,10 @@ function p_ai_add_methods($arr)
         'flags'=>WS_PARAM_OPTIONAL,
       ),
       'display_ai_description' => array(
+        'flags' => WS_PARAM_OPTIONAL,
+        'type' => WS_TYPE_BOOL,
+      ),
+      'allow_new_tags' => array(
         'flags' => WS_PARAM_OPTIONAL,
         'type' => WS_TYPE_BOOL,
       ),
@@ -213,7 +217,7 @@ function p_ws_ai_analyze($params)
   // piwigo ws applies addslashes() to every param
   // stripslashes before p_ai_save_ticket, so the callback path matches the (clean) pull path
   // p_ai_save_tickets then escapes exactly once for sql
-  foreach (['ocr', 'description'] as $field)
+  foreach (['ocr', 'description', 'tag_candidates'] as $field)
   {
     if (isset($params[$field]) && is_string($params[$field]))
     {
@@ -259,6 +263,10 @@ function p_ws_ai_config($params)
   if (isset($params['display_ai_description']))
   {
     $new_conf['display_ai_description'] = $params['display_ai_description'];
+  }
+  if (isset($params['allow_new_tags']))
+  {
+    $new_conf['allow_new_tags'] = $params['allow_new_tags'];
   }
   conf_update_param('piwigo_ai', array_merge($conf['piwigo_ai'], $new_conf), true);
   return 'Configuration saved';
@@ -370,7 +378,9 @@ function p_ws_ai_check_tickets($params)
     $options = json_decode($curr_ticket['options'], true);
     $is_description_failed = $options['caption'] && is_null($ticket['description']);
     $is_ocr_failed = $options['ocr'] && is_null($ticket['ocr']);
-    $is_tagging_failed = $options['tagging'] && empty($ticket['tags']);
+    $is_tagging_failed = $options['tagging']
+      && !empty($options['allow_new_tags'])
+      && empty($ticket['tag_candidates']);
     $is_failed = !isset($ticket['failed'])
       && $is_description_failed
       && $is_ocr_failed
