@@ -84,3 +84,4 @@ $lang['Analysis'] = 'Analysis';
 $lang['Available'] = 'Available';
 $lang['Unavailable'] = 'Unavailable';
 $lang['Unknown'] = 'Unknown';
+$lang['The Piwigo AI server cannot reach this Piwigo, it has to stay private.'] = 'The Piwigo AI server cannot reach this Piwigo, it has to stay private.';

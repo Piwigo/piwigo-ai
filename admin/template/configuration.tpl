@@ -54,7 +54,7 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
   <div class="badge-container hidden" id="p_ai_error_changes">
     <div class="badge-error">
       <i class="icon-cancel"></i>
-      {"an error happened"|translate}
+      <span id="p_ai_error_message" data-default="{"an error happened"|translate|escape:html}">{"an error happened"|translate}</span>
     </div>
   </div>
 

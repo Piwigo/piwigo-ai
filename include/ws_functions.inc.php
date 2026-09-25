@@ -226,8 +226,14 @@ function p_ws_ai_config($params)
     ? strip_tags(stripslashes(trim($params['description_prefix'])))
     : null;
 
+  $is_accessible = pwg_db_real_escape_string($params['is_accessible']) == 1 ? true : false;
+  if ($is_accessible && empty($conf['piwigo_ai']['is_accessible']) && !p_ai_ping())
+  {
+    return new PwgError(400, l10n('The Piwigo AI server cannot reach this Piwigo, it has to stay private.'));
+  }
+
   $new_conf = array(
-    'is_accessible' => pwg_db_real_escape_string($params['is_accessible']) == 1 ? true : false,
+    'is_accessible' => $is_accessible,
     'description_prefix' => $prefix_desc,
   );
   if (isset($params['display_ai_description']))

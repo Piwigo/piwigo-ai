@@ -53,8 +53,6 @@ class piwigo_ai_maintain extends PluginMaintain
         $conf['piwigo_ai']['ticket_callback']);
         $conf['piwigo_ai']['is_accessible'] = false;
         conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
-
-        p_ai_ping($this->default_conf);
       }
 
       if (!isset($conf['piwigo_ai']['display_ai_description']))
@@ -127,8 +125,7 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
   function activate($plugin_version, &$errors = array())
   {
     include_once(PHPWG_PLUGINS_PATH . basename(dirname(__FILE__)) . '/include/functions.inc.php');
-    $ping = p_ai_ping($this->default_conf);
-    if (!$ping)
+    if (!p_ai_check_connection($this->default_conf))
     {
       $errors = l10n('Unable to connect to the Piwigo AI server');
     }

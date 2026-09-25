@@ -20,8 +20,10 @@ function p_show_success() {
   $('#p_ai_error_changes, #p_ai_saving_changes').hide();
   $('#p_ai_saving_changes').show();
 }
-function p_show_error() {
+function p_show_error(message) {
   p_ai_saving = false;
+  const $message = $('#p_ai_error_message');
+  $message.text(message || $message.data('default'));
   $('#p_ai_error_changes, #p_ai_saving_changes').hide();
   $('#p_ai_error_changes').show();
 }
@@ -48,10 +50,10 @@ function p_ai_save() {
         p_show_success();
         return;
       }
-      p_show_error();
+      p_show_error(res.message);
     },
     error: function(e) {
-      p_show_error();
+      p_show_error(e.responseJSON?.message);
     },
   });
 }

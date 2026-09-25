@@ -572,7 +572,7 @@ function p_ai_migrate_db()
   }
 }
 
-function p_ai_ping($default_conf)
+function p_ai_check_connection($default_conf)
 {
   global $conf;
 
@@ -583,24 +583,21 @@ function p_ai_ping($default_conf)
     $conf['piwigo_ai'] = safe_unserialize(conf_get_param('piwigo_ai', $default_conf));
   }
 
+  $result = p_ai_get('/credits');
+  return !isset($result['errors']) || isset($result['status']);
+}
+
+function p_ai_ping()
+{
   // check url localhost / 127.0.0.1
   $piwigo_url = get_absolute_root_url();
   if (!p_ai_is_public_url($piwigo_url))
   {
-    $conf['piwigo_ai']['is_accessible'] = false;
-    conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
-    return true;
+    return false;
   }
 
   $result = p_ai_post('/ping', array('url' => $piwigo_url));
-  if (isset($result['errors']))
-  {
-    return isset($result['status']);
-  }
-
-  $conf['piwigo_ai']['is_accessible'] = isset($result['pong']) && $result['pong'];
-  conf_update_param('piwigo_ai', $conf['piwigo_ai'], true);
-  return true;
+  return !empty($result['pong']);
 }
 
 function p_ai_is_public_url($url)
