@@ -1,6 +1,8 @@
 <?php
 if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
 
+define('P_AI_VERSION', '0.0.7beta');
+
 function p_ai_init()
 {
   global $conf, $template;
@@ -165,10 +167,7 @@ function p_ai_default_headers()
     $headers[] = 'Authorization: Bearer '.$conf['piwigo_ai']['api_key'];
   }
 
-  if (defined('P_AI_VERSION'))
-  {
-    $headers[] = 'X-Plugin-Version: '.P_AI_VERSION;
-  }
+  $headers[] = 'X-Plugin-Version: '.P_AI_VERSION;
 
   return $headers;
 }
@@ -578,10 +577,11 @@ function p_ai_check_connection($default_conf)
 
   // conf fallback because we use this function in
   // maintain.class.php
-  if (!is_array($conf['piwigo_ai'] ?? null))
+  if (!isset($conf['piwigo_ai']))
   {
-    $conf['piwigo_ai'] = safe_unserialize(conf_get_param('piwigo_ai', $default_conf));
+    $conf['piwigo_ai'] = $default_conf;
   }
+  p_ai_check_account();
 
   $result = p_ai_get('/credits');
   return !isset($result['errors']) || isset($result['status']);

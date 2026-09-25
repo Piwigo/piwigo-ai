@@ -2,7 +2,7 @@
 if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
 
 $is_valid_account = p_ai_check_account();
-if (!$is_valid_account)
+if (!$is_valid_account || conf_get_param('piwigo_ai_outdated', false))
 {
   return;
 }
