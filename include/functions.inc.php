@@ -33,14 +33,81 @@ function p_ai_init()
   ));
 }
 
-function p_ai_decode_response($res)
+function p_ai_decode_response($res, $status)
 {
-  $decoded = json_decode($res, true);
-  if (is_array($decoded) && ($decoded['status'] ?? null) === 426)
+  if (426 === $status)
   {
     conf_update_param('piwigo_ai_outdated', true, true);
   }
+
+  $decoded = json_decode($res, true);
+
+  if ($status >= 400)
+  {
+    return array(
+      'errors' => $decoded['message'] ?? l10n('An error occurred with the Piwigo AI server'),
+      'status' => $status,
+    );
+  }
+
+  if (!is_array($decoded))
+  {
+    return array(
+      'errors' => l10n('Invalid response from the Piwigo AI server'),
+      'status' => $status,
+    );
+  }
+
   return $decoded;
+}
+
+function p_ai_request($method, $path, $data = null, $multipart = false, $timeout = 10)
+{
+  global $conf;
+
+  $headers = p_ai_default_headers();
+  $curl_options = array(
+    CURLOPT_CUSTOMREQUEST => $method,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT => $timeout,
+    CURLOPT_USERAGENT => 'PiwigoAI Plugin',
+    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_SSL_VERIFYHOST => 2,
+  );
+
+  if (null !== $data)
+  {
+    if ($multipart)
+    {
+      $curl_options[CURLOPT_POSTFIELDS] = $data;
+    }
+    else
+    {
+      $headers[] = 'Content-Type: application/json';
+      $curl_options[CURLOPT_POSTFIELDS] = json_encode($data);
+    }
+  }
+
+  $curl_options[CURLOPT_HTTPHEADER] = $headers;
+
+  $req = curl_init(rtrim($conf['piwigo_ai']['url_server_ai'], '/') . '/api/v1' . $path);
+  curl_setopt_array($req, $curl_options);
+  $res = curl_exec($req);
+  $error = false === $res ? curl_error($req) : null;
+  $status = (int) curl_getinfo($req, CURLINFO_HTTP_CODE);
+
+  if (version_compare(PHP_VERSION, '8', '<'))
+  {
+    // https://php.net/manual/en/function.curl-close.php
+    curl_close($req);
+  }
+
+  if (false === $res)
+  {
+    return array('errors' => $error);
+  }
+
+  return p_ai_decode_response($res, $status);
 }
 
 function p_ai_check_account()
@@ -58,20 +125,6 @@ function p_ai_check_account()
 
 function p_ai_analyze($image, $callback, $options = [])
 {
-  global $conf;
-
-  $curl = curl_init($conf['piwigo_ai']['url_server_ai'] . '/analyze');
-  $headers = p_ai_default_headers();
-  $curl_options = array(
-    CURLOPT_POST => true,
-    CURLOPT_USERAGENT => 'PiwigoAI Plugin',
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT => 0,
-    CURLOPT_HTTPHEADER => $headers,
-    CURLOPT_SSL_VERIFYPEER => true,
-    CURLOPT_SSL_VERIFYHOST => 2,
-  );
-
   $post_data = array(
     'callback' => $callback,
     'caption' => $options['caption'] ?? true,
@@ -90,100 +143,32 @@ function p_ai_analyze($image, $callback, $options = [])
     $post_data['imageUrl'] = $image;
   }
 
-  $curl_options[CURLOPT_POSTFIELDS] = $post_data;
-  curl_setopt_array($curl, $curl_options);
-
-  
-  $response = curl_exec($curl);
-
-  if (false === $response)
-  {
-    return ['errors' => curl_error($curl)];
-  }
-
-  if (version_compare(PHP_VERSION, '8', '<'))
-  {
-    // https://php.net/manual/en/function.curl-close.php
-    curl_close($curl);
-  }
-
-  return p_ai_decode_response($response);
+  return p_ai_request('POST', '/analyze', $post_data, true, 0);
 }
 
 function p_ai_get(string $url, int $timeout = 10)
 {
-  global $conf;
-
-  $headers = p_ai_default_headers();
-
-  $req = curl_init($conf['piwigo_ai']['url_server_ai'] . $url);
-  curl_setopt($req, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($req, CURLOPT_TIMEOUT, $timeout);
-  curl_setopt($req, CURLOPT_HTTPHEADER, $headers);
-  curl_setopt($req, CURLOPT_USERAGENT, 'PiwigoAI');
-  curl_setopt($req, CURLOPT_SSL_VERIFYPEER, true);
-  curl_setopt($req, CURLOPT_SSL_VERIFYHOST, 2);
-  $res = curl_exec($req);
-  $error = false === $res ? curl_error($req) : null;
-
-  if (version_compare(PHP_VERSION, '8', '<'))
-  {
-    curl_close($req);
-  }
-
-  if (false === $res)
-  {
-    return ['errors' => $error];
-  }
-
-  return p_ai_decode_response($res);
+  return p_ai_request('GET', $url, null, false, $timeout);
 }
 
 function p_ai_post(string $url, array $data, int $timeout = 10)
 {
-  global $conf;
-
-  $headers = p_ai_default_headers();
-  $headers[] = 'Content-Type: application/json';
-
-  $req = curl_init($conf['piwigo_ai']['url_server_ai'] . $url);
-  curl_setopt($req, CURLOPT_POST, true);
-  curl_setopt($req, CURLOPT_POSTFIELDS, json_encode($data));
-  curl_setopt($req, CURLOPT_HTTPHEADER, $headers);
-  curl_setopt($req, CURLOPT_USERAGENT, 'PiwigoAI');
-  curl_setopt($req, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($req, CURLOPT_TIMEOUT, $timeout);
-  curl_setopt($req, CURLOPT_SSL_VERIFYPEER, true);
-  curl_setopt($req, CURLOPT_SSL_VERIFYHOST, 2);
-  $res = curl_exec($req);
-  $error = false === $res ? curl_error($req) : null;
-
-  if (version_compare(PHP_VERSION, '8', '<'))
-  {
-    curl_close($req);
-  }
-
-  if (false === $res)
-  {
-    return ['errors' => $error];
-  }
-
-  return p_ai_decode_response($res);
+  return p_ai_request('POST', $url, $data, false, $timeout);
 }
 
 function p_ai_default_headers()
 {
   global $conf;
-  $headers = [];
+  $headers = array('Accept: application/json');
 
   if (!empty($conf['piwigo_ai']['api_key']))
   {
-    $headers[] = 'X-API-KEY: '.$conf['piwigo_ai']['api_key'];
+    $headers[] = 'Authorization: Bearer '.$conf['piwigo_ai']['api_key'];
   }
 
   if (defined('P_AI_VERSION'))
   {
-    $headers[] = 'X-PLUGIN-VERSION: '.P_AI_VERSION;
+    $headers[] = 'X-Plugin-Version: '.P_AI_VERSION;
   }
 
   return $headers;
