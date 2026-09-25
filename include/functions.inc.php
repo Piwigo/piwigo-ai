@@ -357,6 +357,24 @@ SELECT id
       $results[$tid] = array('errors' => 'Ticket not found');
       continue;
     }
+
+    if ('pending' !== $row['status'])
+    {
+      $results[$tid] = true;
+      continue;
+    }
+
+    $options = json_decode($row['options'], true) ?: array();
+    $result = $data['result'] ?? array();
+    $is_asked = !empty($options['caption']) || !empty($options['tagging']);
+    $is_caption_missing = empty($options['caption']) || empty($result['caption']);
+    $is_tags_missing = empty($options['tagging']) || empty($result['tags']);
+
+    if ('completed' === $data['status'] && $is_asked && $is_caption_missing && $is_tags_missing)
+    {
+      $data['status'] = 'failed';
+      $data['error'] = 'detected failed by piwigo';
+    }
     $logger->info('[p_ai_save_tickets] Saving '.pwg_db_real_escape_string($tid));
 
     // failed reported by the server (or detected upstream)
@@ -378,8 +396,6 @@ SELECT id
       $results[$tid] = array('errors' => 'Image not found');
       continue;
     }
-
-    $result = $data['result'] ?? array();
 
     // image columns (mass_updates expects pre-escaped values)
     $ocr = null;

@@ -14,31 +14,8 @@ function p_ai_add_methods($arr)
     'pwg.ai.analyze',
     'p_ws_ai_analyze',
     array(
-      'account_id' => array(
-        'default' => null
-      ),
-      'ticket_id' => array(),
-      'cost' => array(
-        'type' => WS_TYPE_INT|WS_TYPE_POSITIVE,
-      ),
-      'ocr' => array(
-        'default' => null
-      ),
-      'description' => array(
-        'default' => null
-      ),
-      'tags' => array(
-        'default' => null
-      ),
-      'embedding' => array(
-        'default' => null
-      ),
-      'process_time' => array(
-        'default' => null
-      ),
-      'failed' => array(
-        'flags' => WS_PARAM_OPTIONAL,
-      ),
+      'account_id' => array(),
+      'ticket' => array(),
     ),
     'Save ticket infos',
     null,
@@ -210,18 +187,15 @@ function p_ws_ai_analyze($params)
     return new PwgError(401, 'Invalid account_id');
   }
 
-  // piwigo ws applies addslashes() to every param
-  // stripslashes before p_ai_save_ticket, so the callback path matches the (clean) pull path
-  // p_ai_save_tickets then escapes exactly once for sql
-  foreach (['ocr', 'description'] as $field)
+  // piwigo applies addslashes() to every param: stripslashes gives back the JSON sent by the backend
+  $ticket = json_decode(stripslashes($params['ticket']), true);
+
+  if (!is_array($ticket) || empty($ticket['id']) || empty($ticket['status']))
   {
-    if (isset($params[$field]) && is_string($params[$field]))
-    {
-      $params[$field] = stripslashes($params[$field]);
-    }
+    return new PwgError(WS_ERR_INVALID_PARAM, 'Invalid ticket');
   }
 
-  $save_ticket = p_ai_save_ticket($params);
+  $save_ticket = p_ai_save_ticket($ticket);
 
   if (isset($save_ticket['errors']))
   {
@@ -365,27 +339,9 @@ function p_ws_ai_check_tickets($params)
 
   $sorted = p_ai_sort_polled_tickets(array_keys($pending_tickets), $polled['data']);
 
-  $to_save = array();
-  foreach ($sorted['to_save'] as $ticket)
-  {
-    $options = json_decode($pending_tickets[$ticket['id']]['options'], true) ?: array();
-    $result = $ticket['result'] ?? array();
-    $is_caption_missing = empty($options['caption']) || empty($result['caption']);
-    $is_tags_missing = empty($options['tagging']) || empty($result['tags']);
-    $is_asked = !empty($options['caption']) || !empty($options['tagging']);
-
-    if ('completed' === $ticket['status'] && $is_asked && $is_caption_missing && $is_tags_missing)
-    {
-      $ticket['status'] = 'failed';
-      $ticket['error'] = 'detected failed by piwigo';
-    }
-
-    $to_save[] = $ticket;
-  }
-
   $count = 0;
   $to_ack = array();
-  $saved = p_ai_save_tickets($to_save, $pending_tickets);
+  $saved = p_ai_save_tickets($sorted['to_save'], $pending_tickets);
   foreach ($saved as $ticket_id => $res)
   {
     if (!isset($res['errors']))
