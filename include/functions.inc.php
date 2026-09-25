@@ -21,9 +21,7 @@ function p_ai_init()
   // don't re-seed from the check_tickets worker request itself
   $is_check_tickets_request = ($_REQUEST['method'] ?? '') == 'pwg.ai.check_tickets';
 
-  if (!$is_check_tickets_request
-    && isset($conf['piwigo_ai']['is_accessible'])
-    && !$conf['piwigo_ai']['is_accessible'])
+  if (!$is_check_tickets_request)
   {
     p_ai_check_tickets();
   }
@@ -636,23 +634,26 @@ function p_ai_is_public_ip($ip)
 
 function p_ai_check_tickets()
 {
+  global $conf;
+
   if (p_ai_check_tickets_running()) return;
 
   // debounce the burst of requests a single page view fires (page + its ajax)
   if (p_ai_check_seeded_recently()) return;
 
-  $query = '
-SELECT *
-  FROM '.P_AI_TICKETS_TABLE.'
-  WHERE
-    use_callback = \'false\'
-  AND
-    status = \'pending\'
-  LIMIT 1
-;';
+  $has_tickets = false;
+  if (empty($conf['piwigo_ai']['is_accessible']))
+  {
+    $has_tickets = p_ai_has_pending_ticket('use_callback = \'false\'');
+  }
 
-  $tickets = pwg_db_fetch_assoc(pwg_query($query));
-  if (empty($tickets)) return;
+  if (!$has_tickets && !p_ai_check_seeded_recently(600, 'ai_check_tickets_last_fallback'))
+  {
+    conf_update_param('ai_check_tickets_last_fallback', time());
+    $has_tickets = p_ai_has_pending_ticket('created_at < NOW() - INTERVAL 30 MINUTE');
+  }
+
+  if (!$has_tickets) return;
 
   $exec_id = pwg_unique_exec_begins('ai_check_tickets');
   if (!$exec_id) return; // another one won the race
@@ -661,9 +662,24 @@ SELECT *
   p_ai_fire_check_worker($exec_id, 0);
 }
 
-function p_ai_check_seeded_recently($window = 10)
+function p_ai_has_pending_ticket($condition)
 {
-  $last_seed = conf_get_param('ai_check_tickets_last_seed', 0);
+  $query = '
+SELECT ticket_id
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE
+    status = \'pending\'
+  AND
+    '.$condition.'
+  LIMIT 1
+;';
+
+  return pwg_db_num_rows(pwg_query($query)) > 0;
+}
+
+function p_ai_check_seeded_recently($window = 10, $param = 'ai_check_tickets_last_seed')
+{
+  $last_seed = conf_get_param($param, 0);
   return (time() - (int)$last_seed) < $window;
 }
 
