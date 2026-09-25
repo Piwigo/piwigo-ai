@@ -126,10 +126,10 @@ function p_ai_check_account()
 function p_ai_analyze($image, $callback, $options = [])
 {
   $post_data = array(
-    'callback' => $callback,
-    'caption' => $options['caption'] ?? true,
-    'tagging' => $options['tagging'] ?? true,
-    'ocr' => $options['ocr'] ?? true,
+    'caption' => ($options['caption'] ?? true) ? '1' : '0',
+    'tagging' => ($options['tagging'] ?? true) ? '1' : '0',
+    'ocr' => ($options['ocr'] ?? true) ? '1' : '0',
+    'embedding' => p_ai_check_db_compatibility() ? '1' : '0',
     'language' => get_default_language(),
   );
 
@@ -140,10 +140,11 @@ function p_ai_analyze($image, $callback, $options = [])
   }
   else
   {
-    $post_data['imageUrl'] = $image;
+    $post_data['image_url'] = $image;
+    $post_data['callback_url'] = $callback;
   }
 
-  return p_ai_request('POST', '/analyze', $post_data, true, 0);
+  return p_ai_request('POST', '/tickets', $post_data, true, 0);
 }
 
 function p_ai_get(string $url, int $timeout = 10)
@@ -203,12 +204,9 @@ function p_ai_submit_image(array $image_info, array $options)
     return array('errors' => $response['errors']);
   }
 
-  if (!empty($response['status']) && $response['status'] >= 400)
-  {
-    return array('errors' => $response['message'] ?? l10n('An error occurred with the Piwigo AI server'));
-  }
+  $ticket = $response['data'] ?? array();
 
-  if (empty($response['ticket_id']))
+  if (empty($ticket['id']))
   {
     return array('errors' => l10n('No ticket ID in Piwigo AI response'));
   }
@@ -216,11 +214,11 @@ function p_ai_submit_image(array $image_info, array $options)
   single_insert(
     P_AI_TICKETS_TABLE,
     array(
-      'ticket_id'    => $response['ticket_id'],
+      'ticket_id'    => $ticket['id'],
       'image_id'     => $image_info['id'],
-      'status'       => $response['ticket_status'],
-      'options'      => $response['options'],
-      'cost'         => $response['cost'],
+      'status'       => $ticket['status'],
+      'options'      => json_encode($ticket['options']),
+      'cost'         => $ticket['cost'],
       'use_callback' => $callback ? 'true' : 'false',
     )
   );
