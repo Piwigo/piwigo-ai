@@ -348,37 +348,36 @@ function p_ws_ai_check_tickets($params)
   }
 
   $pending_tickets = p_ai_get_pending_tickets();
-  $result = p_ai_post('/tickets/poll', ['ticket_ids' => array_keys($pending_tickets)]);
-  
-  if (isset($result['errors']) || !isset($result['tickets']))
+  if (empty($pending_tickets))
+  {
+    if (!$params['force']) pwg_unique_exec_ends('ai_check_tickets');
+    return array('processed' => 0);
+  }
+
+  $polled = p_ai_post('/tickets/poll', array('ticket_ids' => array_keys($pending_tickets)));
+
+  if (isset($polled['errors']) || !isset($polled['data']))
   {
     $logger->error('[PIWIGO_AI][CHECK TICKETS] Unable to retrieves result from AI Server');
     if (!$params['force']) pwg_unique_exec_ends('ai_check_tickets');
     return new PwgError(500, l10n('Error with AI Server'));
   }
 
-  // collect the results, then save them all in one batch
+  $sorted = p_ai_sort_polled_tickets(array_keys($pending_tickets), $polled['data']);
+
   $to_save = array();
-  foreach($result['tickets'] as $ticket)
+  foreach ($sorted['to_save'] as $ticket)
   {
-    $curr_ticket = $pending_tickets[$ticket['ticket_id']] ?? null;
-    if (empty($curr_ticket))
-    {
-      continue;
-    }
+    $options = json_decode($pending_tickets[$ticket['id']]['options'], true) ?: array();
+    $result = $ticket['result'] ?? array();
+    $is_caption_missing = empty($options['caption']) || empty($result['caption']);
+    $is_tags_missing = empty($options['tagging']) || empty($result['tags']);
+    $is_asked = !empty($options['caption']) || !empty($options['tagging']);
 
-    $options = json_decode($curr_ticket['options'], true);
-    $is_description_failed = $options['caption'] && is_null($ticket['description']);
-    $is_ocr_failed = $options['ocr'] && is_null($ticket['ocr']);
-    $is_tagging_failed = $options['tagging'] && empty($ticket['tags']);
-    $is_failed = !isset($ticket['failed'])
-      && $is_description_failed
-      && $is_ocr_failed
-      && $is_tagging_failed;
-
-    if ($is_failed)
+    if ('completed' === $ticket['status'] && $is_asked && $is_caption_missing && $is_tags_missing)
     {
-      $ticket['failed'] = 'detected failed by piwigo';
+      $ticket['status'] = 'failed';
+      $ticket['error'] = 'detected failed by piwigo';
     }
 
     $to_save[] = $ticket;
@@ -399,30 +398,17 @@ function p_ws_ai_check_tickets($params)
   // tell the AI server it can purge the results we durably saved
   if (!empty($to_ack))
   {
-    p_ai_post('/tickets/ack', ['ticket_ids' => $to_ack]);
+    p_ai_post('/tickets/ack', array('ticket_ids' => $to_ack));
   }
 
-  // not_found / acked will never resolve, fail them so they leave the queue
-  $terminal = array(
-    'not found on AI server' => $result['not_found'] ?? array(),
-    'result already acknowledged' => $result['acked'] ?? array(),
-  );
-  foreach ($terminal as $message => $ticket_ids)
+  // not found / acknowledged / expired will never resolve, fail them so they leave the queue
+  $failed_by_message = array();
+  foreach ($sorted['failed'] as $ticket_id => $message)
   {
-    // keep only the ids we actually hold as pending, then fail them in one query
-    $ids = array();
-    foreach ($ticket_ids as $ticket_id)
-    {
-      if (isset($pending_tickets[$ticket_id]))
-      {
-        $ids[] = '"'.pwg_db_real_escape_string($ticket_id).'"';
-      }
-    }
-    if (empty($ids))
-    {
-      continue;
-    }
-
+    $failed_by_message[$message][] = '"'.pwg_db_real_escape_string($ticket_id).'"';
+  }
+  foreach ($failed_by_message as $message => $ids)
+  {
     pwg_query('
 UPDATE '.P_AI_TICKETS_TABLE.'
   SET status = \'failed\'

@@ -250,10 +250,43 @@ SELECT *
 }
 
 // single-ticket wrapper for the callback path (pwg.ai.analyze)
+function p_ai_sort_polled_tickets(array $pending_ids, array $polled)
+{
+  $by_id = array();
+  foreach ($polled as $ticket)
+  {
+    $by_id[$ticket['id']] = $ticket;
+  }
+
+  $sorted = array('to_save' => array(), 'failed' => array());
+  foreach ($pending_ids as $ticket_id)
+  {
+    $ticket = $by_id[$ticket_id] ?? null;
+    if (null === $ticket)
+    {
+      $sorted['failed'][$ticket_id] = 'not found on AI server';
+    }
+    else if (!empty($ticket['expired_at']))
+    {
+      $sorted['failed'][$ticket_id] = 'result expired, never acknowledged';
+    }
+    else if (!empty($ticket['acked_at']))
+    {
+      $sorted['failed'][$ticket_id] = 'result already acknowledged';
+    }
+    else if (in_array($ticket['status'], array('completed', 'failed'), true))
+    {
+      $sorted['to_save'][] = $ticket;
+    }
+  }
+
+  return $sorted;
+}
+
 function p_ai_save_ticket($data)
 {
   $results = p_ai_save_tickets(array($data));
-  $result = $results[$data['ticket_id']] ?? array('errors' => 'Ticket not found');
+  $result = $results[$data['id']] ?? array('errors' => 'Ticket not found');
 
   return isset($result['errors']) ? $result : 'Ticket updated';
 }
@@ -272,9 +305,9 @@ function p_ai_save_tickets(array $tickets, array $known = array())
   $needed = array();
   foreach ($tickets as $t)
   {
-    if (!isset($known[$t['ticket_id']]))
+    if (!isset($known[$t['id']]))
     {
-      $needed[] = '"'.pwg_db_real_escape_string($t['ticket_id']).'"';
+      $needed[] = '"'.pwg_db_real_escape_string($t['id']).'"';
     }
   }
   if (!empty($needed))
@@ -293,8 +326,8 @@ SELECT *
   $image_ids = array();
   foreach ($tickets as $data)
   {
-    if (isset($data['failed'])) continue;
-    $row = $known[$data['ticket_id']] ?? null;
+    if ('failed' === $data['status']) continue;
+    $row = $known[$data['id']] ?? null;
     if ($row) $image_ids[(int)$row['image_id']] = true;
   }
   $existing_images = array();
@@ -317,7 +350,7 @@ SELECT id
 
   foreach ($tickets as $data)
   {
-    $tid = $data['ticket_id'];
+    $tid = $data['id'];
     $row = $known[$tid] ?? null;
     if (!$row)
     {
@@ -327,12 +360,12 @@ SELECT id
     $logger->info('[p_ai_save_tickets] Saving '.pwg_db_real_escape_string($tid));
 
     // failed reported by the server (or detected upstream)
-    if (isset($data['failed']))
+    if ('failed' === $data['status'])
     {
       $tickets_failed[] = array(
         'ticket_id' => pwg_db_real_escape_string($tid),
         'cost' => $data['cost'] ?? null,
-        'failed_message' => pwg_db_real_escape_string($data['failed']),
+        'failed_message' => pwg_db_real_escape_string($data['error'] ?? 'failed'),
         'status' => 'failed',
       );
       $results[$tid] = true;
@@ -346,37 +379,35 @@ SELECT id
       continue;
     }
 
+    $result = $data['result'] ?? array();
+
     // image columns (mass_updates expects pre-escaped values)
     $ocr = null;
-    if (!empty($data['ocr']))
+    if (!empty($result['ocr']))
     {
-      $ocr = pwg_db_real_escape_string($data['ocr']);
+      $ocr = pwg_db_real_escape_string(json_encode($result['ocr'], JSON_UNESCAPED_UNICODE));
     }
     $images_update[] = array(
       'id' => $image_id,
       'ocr' => $ocr,
-      'ai_description' => !empty($data['description'])
-        ? pwg_db_real_escape_string($data['description'])
+      'ai_description' => !empty($result['caption'])
+        ? pwg_db_real_escape_string($result['caption'])
         : null,
     );
 
     // embedding (per-row: needs a SQL function, unfit for mass_updates)
-    if (!empty($data['embedding']) && $is_compatible)
+    if (!empty($result['embedding']) && is_array($result['embedding']) && $is_compatible)
     {
-      $decoded = json_decode($data['embedding'], true);
-      if (is_array($decoded))
-      {
-        $embeddings[$image_id] = pwg_db_real_escape_string($data['embedding']);
-      }
+      $embeddings[$image_id] = pwg_db_real_escape_string(json_encode($result['embedding']));
     }
 
     // tags (names pre-escaped: tag_id_from_tag_name expects escaped input)
-    if (!empty($data['tags']))
+    if (!empty($result['tags']))
     {
       $names = array();
-      foreach (explode(',', $data['tags']) as $tag_candidate)
+      foreach ($result['tags'] as $tag_candidate)
       {
-        $name = pwg_db_real_escape_string(strip_tags(stripslashes(trim($tag_candidate))));
+        $name = pwg_db_real_escape_string(strip_tags(trim($tag_candidate)));
         if ($name !== '')
         {
           $names[] = $name;
