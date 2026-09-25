@@ -21,7 +21,7 @@ if (!$compatibility)
 
 $statistiques = p_ai_get_stats();
 $credits = p_ai_get('/credits');
-$is_ai_server_up = p_ai_get('/health');
+$health = p_ai_get('/health');
 
 // +-----------------------------------------------------------------------+
 // | template init                                                         |
@@ -31,7 +31,8 @@ $template->assign(array(
   'PWG_TOKEN' => get_pwg_token(),
   'P_AI_STATS' => $statistiques,
   'P_AI_CREDITS' => $credits['credits'] ?? 0,
-  'P_AI_SERVER_ONLINE' => $is_ai_server_up['up'] ?? false,
+  'P_AI_SERVER_ONLINE' => $health['up'] ?? false,
+  'P_AI_ANALYSIS_UP' => $health['ai_server_up'] ?? null,
   'P_AI_SERVER_DOMAIN' => preg_replace("(^https?://)", "", $conf['piwigo_ai']['url_server_ai']),
  ));
 $template->set_filename('p_ai_admin_content', P_AI_REALPATH . '/admin/template/overview.tpl');

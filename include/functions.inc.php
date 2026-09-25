@@ -594,10 +594,10 @@ function p_ai_ping($default_conf)
     return true;
   }
 
-  $result = p_ai_post('/ping', ['callback' => $piwigo_url]);
+  $result = p_ai_post('/ping', array('url' => $piwigo_url));
   if (isset($result['errors']))
   {
-    return false;
+    return isset($result['status']);
   }
 
   $conf['piwigo_ai']['is_accessible'] = isset($result['pong']) && $result['pong'];

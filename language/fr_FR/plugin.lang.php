@@ -80,3 +80,7 @@ $lang['Credit usage'] = 'Consommation de crédits';
 $lang['AI-generated tags'] = 'Tags générés par l\'IA';
 $lang['Gallery coverage'] = 'de la galerie analysée';
 $lang['Session usage limits how many photos can be sent to the AI in a 4-hour window. This is separate from credits: credits are consumed per analysis, while the session limit prevents overloading the server with large batch requests.'] = 'L\'utilisation par session limite le nombre de photos envoyées à l\'IA sur une fenêtre de 4 heures. C\'est distinct des crédits : les crédits sont consommés par analyse, tandis que la limite de session évite de surcharger le serveur avec de grandes demandes en lot.';
+$lang['Analysis'] = 'Analyse';
+$lang['Available'] = 'Disponible';
+$lang['Unavailable'] = 'Indisponible';
+$lang['Unknown'] = 'Inconnue';

@@ -117,6 +117,10 @@ const str_error_compatibility = "{'The database is still not compatible with the
               <span class="font-medium truncate ml-2 dark:text-[#a1a1a1]">{$P_AI_SERVER_DOMAIN}</span>
             </div>
             <div class="flex items-center justify-between">
+              <span>{'Analysis'|translate}</span>
+              <span class="font-medium dark:text-[#a1a1a1]">{if $P_AI_ANALYSIS_UP === true}{'Available'|translate}{elseif $P_AI_ANALYSIS_UP === false}{'Unavailable'|translate}{else}{'Unknown'|translate}{/if}</span>
+            </div>
+            <div class="flex items-center justify-between">
               <span>{'Mode'|translate}</span>
               <span class="font-medium dark:text-[#a1a1a1]">{if $P_AI_CONFIG.is_accessible}{"public"|translate}{else}{"private"|translate}{/if}</span>
             </div>
