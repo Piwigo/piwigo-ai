@@ -1,6 +1,8 @@
 <?php
 defined('PHPWG_ROOT_PATH') or die('Hacking attempt!');
 
+include_once(dirname(__FILE__) . '/include/constants.inc.php');
+
 class piwigo_ai_maintain extends PluginMaintain
 {
   private $table;

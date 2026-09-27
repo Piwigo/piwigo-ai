@@ -1,8 +1,6 @@
 <?php
 if (!defined('PHPWG_ROOT_PATH')) die('Hacking attempt!');
 
-define('P_AI_VERSION', '0.0.7beta');
-
 function p_ai_init()
 {
   global $conf, $template;
