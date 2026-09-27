@@ -25,6 +25,7 @@ function p_ai_loc_end_add_uploaded_file(array $image_info)
   if (isset($response['unsent']))
   {
     $logger->info('[PIWIGO AI]['.__FUNCTION__.'] Sent later : ' . $response['unsent']);
+    header('X-Piwigo-AI-Unsent: '.rawurlencode($response['unsent']));
   }
   else if (isset($response['errors']))
   {

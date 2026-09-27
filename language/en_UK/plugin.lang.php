@@ -88,3 +88,5 @@ $lang['The Piwigo AI server cannot reach this Piwigo, it has to stay private.'] 
 $lang['Piwigo AI server unreachable'] = 'Piwigo AI server unreachable';
 $lang['%d photo will be sent to Piwigo AI later'] = '%d photo will be sent to Piwigo AI later';
 $lang['%d photos will be sent to Piwigo AI later'] = '%d photos will be sent to Piwigo AI later';
+$lang['Piwigo AI: %s was not analyzed: %s'] = 'Piwigo AI: %s was not analyzed: %s';
+$lang['Piwigo AI: %d photos were not analyzed: %s'] = 'Piwigo AI: %d photos were not analyzed: %s';

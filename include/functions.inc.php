@@ -42,8 +42,10 @@ function p_ai_decode_response($res, $status)
 
   if ($status >= 400)
   {
+    $first_error = is_array($decoded['errors'] ?? null) ? reset($decoded['errors']) : null;
+
     return array(
-      'errors' => $decoded['message'] ?? l10n('An error occurred with the Piwigo AI server'),
+      'errors' => $first_error[0] ?? $decoded['message'] ?? l10n('An error occurred with the Piwigo AI server'),
       'status' => $status,
     );
   }

@@ -5,6 +5,8 @@ Variables
 let p_uploader;
 let file_upload = [];
 let last_nb_files = 0;
+let p_ai_upload_errors = {};
+let p_ai_upload_unsent = 0;
 
 const p_ai_infos = $('#p_ai_infos');
 const p_ai_upload = $('#togglePwgAiMode');
@@ -76,7 +78,24 @@ $(function() {
       up.bind('StateChanged', function(up) {
         if (up.state === plupload.STARTED) {
           p_ai_infos.hide();
+          p_ai_upload_errors = {};
+          p_ai_upload_unsent = 0;
         }
+      });
+
+      up.bind('FileUploaded', function(up, file, info) {
+        const error = p_ai_response_header(info.responseHeaders, 'X-Piwigo-AI-Error');
+        if (error !== null) {
+          p_ai_upload_errors[error] = p_ai_upload_errors[error] || [];
+          p_ai_upload_errors[error].push(file.name);
+        }
+        if (p_ai_response_header(info.responseHeaders, 'X-Piwigo-AI-Unsent') !== null) {
+          p_ai_upload_unsent++;
+        }
+      });
+
+      up.bind('UploadComplete', function() {
+        p_ai_show_upload_report();
       });
     });
   }
@@ -94,6 +113,35 @@ function reset_p_ai_infos(nb_files) {
   }
   const text = sprintf(str_p_ai_infos_text, nb_files);
   $('#p_ai_infos_text').text(text);
+}
+
+function p_ai_response_header(headers, name) {
+  const line = (headers || '').split(/\r?\n/).find(function(line) {
+    return line.toLowerCase().indexOf(name.toLowerCase() + ':') === 0;
+  });
+  if (!line) {
+    return null;
+  }
+  return decodeURIComponent(line.slice(name.length + 1).trim());
+}
+
+function p_ai_show_upload_report() {
+  $.each(p_ai_upload_errors, function(message, files) {
+    const text = files.length === 1
+      ? sprintf(str_p_ai_error_one, files[0], message)
+      : sprintf(str_p_ai_error_many, files.length, message);
+    $('.errors ul').append($('<li>').text(text));
+    $('.errors').show();
+  });
+
+  if (p_ai_upload_unsent > 0) {
+    const text = sprintf(p_ai_upload_unsent === 1 ? str_p_ai_unsent_one : str_p_ai_unsent_many, p_ai_upload_unsent);
+    if (!$('.infos ul').length) {
+      $('.infos').append('<ul></ul>');
+    }
+    $('.infos ul').last().append($('<li>').text(text).prepend('<i class="eiw-icon icon-clock"></i>'));
+    $('.infos').show();
+  }
 }
 
 function is_ai_checked() {

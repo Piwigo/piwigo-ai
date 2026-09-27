@@ -4,6 +4,10 @@
 {combine_script id='p_ai_script_add_picture_options' load='footer' path="{$P_AI_PATH}admin/js/add_picture_options.js"}
 {footer_script}
 const str_p_ai_infos_text = "{'%s photos will be analyzed by Piwigo AI'|translate|escape:javascript}";
+const str_p_ai_unsent_one = "{'%d photo will be sent to Piwigo AI later'|translate|escape:javascript}";
+const str_p_ai_unsent_many = "{'%d photos will be sent to Piwigo AI later'|translate|escape:javascript}";
+const str_p_ai_error_one = "{'Piwigo AI: %s was not analyzed: %s'|translate|escape:javascript}";
+const str_p_ai_error_many = "{'Piwigo AI: %d photos were not analyzed: %s'|translate|escape:javascript}";
 {/footer_script}
 <div class="hidden" id="p_ai_options">
   <div>
