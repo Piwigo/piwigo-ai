@@ -327,11 +327,17 @@ function p_ws_ai_check_tickets($params)
     }
   }
 
+  $count = 0;
+  if (!$params['force'])
+  {
+    $count += p_ai_send_unsent_tickets($params['exec_id']);
+  }
+
   $pending_tickets = p_ai_get_pending_tickets();
   if (empty($pending_tickets))
   {
     if (!$params['force']) pwg_unique_exec_ends('ai_check_tickets');
-    return array('processed' => 0);
+    return array('processed' => $count);
   }
 
   $polled = p_ai_post('/tickets/poll', array('ticket_ids' => array_keys($pending_tickets)));
@@ -345,7 +351,6 @@ function p_ws_ai_check_tickets($params)
 
   $sorted = p_ai_sort_polled_tickets(array_keys($pending_tickets), $polled['data']);
 
-  $count = 0;
   $to_ack = array();
   $saved = p_ai_save_tickets($sorted['to_save'], $pending_tickets);
   foreach ($saved as $ticket_id => $res)
@@ -385,7 +390,8 @@ UPDATE '.P_AI_TICKETS_TABLE.'
   $has_more = !$params['force']
     && $count > 0
     && $iteration < 20
-    && count(p_ai_get_pending_tickets()) > 0;
+    && (count(p_ai_get_pending_tickets()) > 0
+      || p_ai_has_pending_ticket('COALESCE(send_attempt_at, created_at) < NOW() - INTERVAL 10 MINUTE', 'unsent'));
 
   if ($has_more)
   {
@@ -425,7 +431,9 @@ function p_ws_ai_tickets_getList($params)
     {
       return new PwgError(WS_ERR_INVALID_PARAM, 'Invalid status value. Allowed: ' . implode(', ', $allowed_status));
     }
-    $where_clauses[] = 't.status = "' . $status . '"';
+    $where_clauses[] = 'pending' === $status
+      ? 't.status IN ("unsent", "pending")'
+      : 't.status = "' . $status . '"';
   }
 
   if (!empty($params['image_id']))
@@ -489,7 +497,7 @@ function p_ws_ai_retry_failed($params)
   }
 
   $query = '
-SELECT ticket_id, image_id, options
+SELECT id, image_id, options
   FROM ' . P_AI_TICKETS_TABLE . '
   WHERE status = \'failed\'
 ;';
@@ -514,7 +522,7 @@ SELECT ticket_id, image_id, options
 
     pwg_query('
 DELETE FROM ' . P_AI_TICKETS_TABLE . '
-  WHERE ticket_id = "' . pwg_db_real_escape_string($ticket['ticket_id']) . '"
+  WHERE id = ' . (int)$ticket['id'] . '
 ');
 
     $response = p_ai_submit_image($image, $options);

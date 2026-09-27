@@ -117,6 +117,7 @@ function p_ai_element_set_global_action($action, $collection)
   }
 
   $success = 0;
+  $unsent = 0;
 
   foreach ($collection as $image_id)
   {
@@ -127,6 +128,12 @@ function p_ai_element_set_global_action($action, $collection)
     }
 
     $response = p_ai_submit_image($image_info, $options);
+
+    if (isset($response['unsent']))
+    {
+      $unsent++;
+      continue;
+    }
 
     if (isset($response['errors']))
     {
@@ -140,6 +147,11 @@ function p_ai_element_set_global_action($action, $collection)
   if ($success > 0)
   {
     $page['infos'][] = l10n_dec('%d photo sent to Piwigo AI', '%d photos sent to Piwigo AI', $success);
+  }
+
+  if ($unsent > 0)
+  {
+    $page['infos'][] = l10n_dec('%d photo will be sent to Piwigo AI later', '%d photos will be sent to Piwigo AI later', $unsent);
   }
 }
 

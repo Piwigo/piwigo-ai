@@ -67,6 +67,7 @@ function p_ai_request($method, $path, $data = null, $multipart = false, $timeout
   $curl_options = array(
     CURLOPT_CUSTOMREQUEST => $method,
     CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_CONNECTTIMEOUT => 5,
     CURLOPT_TIMEOUT => $timeout,
     CURLOPT_USERAGENT => 'PiwigoAI Plugin',
     CURLOPT_SSL_VERIFYPEER => true,
@@ -142,7 +143,7 @@ function p_ai_analyze($image, $callback, $options = [])
     $post_data['callback_url'] = $callback;
   }
 
-  return p_ai_request('POST', '/tickets', $post_data, true, 0);
+  return p_ai_request('POST', '/tickets', $post_data, true, 300);
 }
 
 function p_ai_get(string $url, int $timeout = 10)
@@ -172,7 +173,41 @@ function p_ai_default_headers()
 
 function p_ai_submit_image(array $image_info, array $options)
 {
+  single_insert(
+    P_AI_TICKETS_TABLE,
+    array(
+      'image_id'        => $image_info['id'],
+      'status'          => 'unsent',
+      'options'         => pwg_db_real_escape_string(json_encode($options)),
+      'use_callback'    => 'false',
+    )
+  );
+
+  return p_ai_send_ticket(pwg_db_insert_id(), $image_info, $options);
+}
+
+// an unsent ticket belongs to the request that claimed it for 10 minutes, so it is never sent twice
+function p_ai_claim_unsent_ticket($id)
+{
+  pwg_query('
+UPDATE '.P_AI_TICKETS_TABLE.'
+  SET send_attempt_at = NOW()
+  WHERE id = '.(int)$id.'
+    AND status = \'unsent\'
+    AND COALESCE(send_attempt_at, created_at) < NOW() - INTERVAL 10 MINUTE
+;');
+
+  return pwg_db_changes() > 0;
+}
+
+function p_ai_send_ticket($id, array $image_info, array $options)
+{
   global $conf;
+
+  if (p_ai_check_seeded_recently(60, 'ai_backend_down_at'))
+  {
+    return array('unsent' => l10n('Piwigo AI server unreachable'));
+  }
 
   $abs_root = get_absolute_root_url();
 
@@ -188,37 +223,120 @@ function p_ai_submit_image(array $image_info, array $options)
     $img = realpath(PHPWG_ROOT_PATH . $image_info['path']); // /var/www/html/piwigo/upload/2026/05/06/202605xxxxxxxx-xxxxxxx.jpg
     if (!$img || !is_file($img))
     {
-      return array('errors' => l10n('Image file not found').' => '.$image_info['path']);
+      return p_ai_fail_unsent_ticket($id, l10n('Image file not found').' => '.$image_info['path']);
     }
   }
 
   $response = p_ai_analyze($img, $callback, $options);
 
+  if (p_ai_is_temporary_error($response))
+  {
+    conf_update_param('ai_backend_down_at', time(), true);
+    return array('unsent' => $response['errors']);
+  }
+
   if (!empty($response['errors']))
   {
-    return array('errors' => $response['errors']);
+    return p_ai_fail_unsent_ticket($id, $response['errors']);
   }
 
   $ticket = $response['data'] ?? array();
 
   if (empty($ticket['id']))
   {
-    return array('errors' => l10n('No ticket ID in Piwigo AI response'));
+    return p_ai_fail_unsent_ticket($id, l10n('No ticket ID in Piwigo AI response'));
   }
 
-  single_insert(
+  single_update(
     P_AI_TICKETS_TABLE,
     array(
-      'ticket_id'    => $ticket['id'],
-      'image_id'     => $image_info['id'],
-      'status'       => $ticket['status'],
-      'options'      => json_encode($ticket['options']),
-      'cost'         => $ticket['cost'],
+      'ticket_id'    => pwg_db_real_escape_string($ticket['id']),
+      'status'       => pwg_db_real_escape_string($ticket['status']),
+      'options'      => pwg_db_real_escape_string(json_encode($ticket['options'])),
+      'cost'         => (int)$ticket['cost'],
       'use_callback' => $callback ? 'true' : 'false',
-    )
+    ),
+    array('id' => (int)$id)
   );
 
   return $response;
+}
+
+function p_ai_is_temporary_error(array $response)
+{
+  if (empty($response['errors']))
+  {
+    return false;
+  }
+
+  $status = $response['status'] ?? 0;
+  return 0 === $status || 429 === $status || $status >= 500;
+}
+
+function p_ai_fail_unsent_ticket($id, $message)
+{
+  single_update(
+    P_AI_TICKETS_TABLE,
+    array(
+      'status'         => 'failed',
+      'failed_message' => pwg_db_real_escape_string($message),
+    ),
+    array('id' => (int)$id)
+  );
+
+  return array('errors' => $message);
+}
+
+function p_ai_send_unsent_tickets($exec_id = null, $limit = 10)
+{
+  pwg_query('
+UPDATE '.P_AI_TICKETS_TABLE.'
+  SET status = \'failed\'
+    , failed_message = \'Piwigo AI server unreachable\'
+  WHERE status = \'unsent\'
+    AND created_at < NOW() - INTERVAL 24 HOUR
+;');
+
+  $query = '
+SELECT id, image_id, options
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE status = \'unsent\'
+    AND COALESCE(send_attempt_at, created_at) < NOW() - INTERVAL 10 MINUTE
+  ORDER BY id
+  LIMIT '.(int)$limit.'
+;';
+  $tickets = query2array($query);
+
+  $count = 0;
+  foreach ($tickets as $ticket)
+  {
+    if (!p_ai_claim_unsent_ticket($ticket['id']))
+    {
+      continue;
+    }
+
+    $image_info = get_image_infos($ticket['image_id']);
+    if (empty($image_info))
+    {
+      p_ai_fail_unsent_ticket($ticket['id'], 'Image not found');
+      $count++;
+      continue;
+    }
+
+    $response = p_ai_send_ticket($ticket['id'], $image_info, json_decode($ticket['options'], true) ?: array());
+    if (isset($response['unsent']))
+    {
+      break;
+    }
+
+    $count++;
+    if ($exec_id)
+    {
+      p_ai_refresh_check_lock($exec_id);
+    }
+  }
+
+  return $count;
 }
 
 function p_ai_get_tickets()
@@ -642,6 +760,12 @@ function p_ai_check_tickets()
     $has_tickets = p_ai_has_pending_ticket('use_callback = \'false\'');
   }
 
+  if (!$has_tickets && !p_ai_check_seeded_recently(300, 'ai_check_tickets_last_unsent'))
+  {
+    conf_update_param('ai_check_tickets_last_unsent', time());
+    $has_tickets = p_ai_has_pending_ticket('COALESCE(send_attempt_at, created_at) < NOW() - INTERVAL 10 MINUTE', 'unsent');
+  }
+
   if (!$has_tickets && !p_ai_check_seeded_recently(600, 'ai_check_tickets_last_fallback'))
   {
     conf_update_param('ai_check_tickets_last_fallback', time());
@@ -657,13 +781,13 @@ function p_ai_check_tickets()
   p_ai_fire_check_worker($exec_id, 0);
 }
 
-function p_ai_has_pending_ticket($condition)
+function p_ai_has_pending_ticket($condition, $status = 'pending')
 {
   $query = '
-SELECT ticket_id
+SELECT id
   FROM '.P_AI_TICKETS_TABLE.'
   WHERE
-    status = \'pending\'
+    status = \''.$status.'\'
   AND
     '.$condition.'
   LIMIT 1

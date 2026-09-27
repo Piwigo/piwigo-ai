@@ -22,7 +22,11 @@ function p_ai_loc_end_add_uploaded_file(array $image_info)
   if (!$options['caption'] && !$options['tagging'] && !$options['ocr']) return;
 
   $response = p_ai_submit_image($image_info, $options);
-  if (isset($response['errors']))
+  if (isset($response['unsent']))
+  {
+    $logger->info('[PIWIGO AI]['.__FUNCTION__.'] Sent later : ' . $response['unsent']);
+  }
+  else if (isset($response['errors']))
   {
     $logger->error('[PIWIGO AI]['.__FUNCTION__.'] Error : ' . $response['errors']);
     header('X-Piwigo-AI-Error: '.rawurlencode($response['errors']));

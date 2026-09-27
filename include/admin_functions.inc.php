@@ -6,14 +6,14 @@ function p_ai_get_stats()
   $query = '
 SELECT count(*)
   FROM `'.P_AI_TICKETS_TABLE.'`
-  WHERE NOT status = \'pending\'
+  WHERE status NOT IN (\'unsent\', \'pending\')
 ;';
   list($nb_of_completed_jobs) = pwg_db_fetch_row(pwg_query($query));
 
   $query = '
 SELECT count(*)
   FROM `'.P_AI_TICKETS_TABLE.'`
-  WHERE status = \'pending\'
+  WHERE status IN (\'unsent\', \'pending\')
 ;';
   list($nb_of_pending_jobs) = pwg_db_fetch_row(pwg_query($query));
 

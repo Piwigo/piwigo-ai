@@ -85,3 +85,6 @@ $lang['Available'] = 'Disponible';
 $lang['Unavailable'] = 'Indisponible';
 $lang['Unknown'] = 'Inconnue';
 $lang['The Piwigo AI server cannot reach this Piwigo, it has to stay private.'] = 'Le serveur Piwigo AI ne peut pas joindre ce Piwigo, il doit rester privé.';
+$lang['Piwigo AI server unreachable'] = 'Serveur Piwigo AI injoignable';
+$lang['%d photo will be sent to Piwigo AI later'] = '%d photo sera envoyée à Piwigo AI plus tard';
+$lang['%d photos will be sent to Piwigo AI later'] = '%d photos seront envoyées à Piwigo AI plus tard';

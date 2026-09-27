@@ -97,9 +97,10 @@ class piwigo_ai_maintain extends PluginMaintain
 
     pwg_query('
 CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
-  `ticket_id` CHAR(36) NOT NULL,
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `ticket_id` CHAR(36) NULL DEFAULT NULL,
   `image_id` int(11) unsigned NOT NULL,
-  `status` enum(\'pending\',\'failed\',\'completed\') NOT NULL,
+  `status` enum(\'unsent\',\'pending\',\'failed\',\'completed\') NOT NULL,
   `use_callback` enum(\'true\', \'false\') NOT NULL,
   `cost` FLOAT NULL,
   `options` LONGTEXT NULL,
@@ -108,7 +109,9 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
   `completed_at` TIMESTAMP NULL,
   `failed_at` TIMESTAMP NULL,
   `failed_message` TEXT NULL DEFAULT NULL,
-  PRIMARY KEY (`ticket_id`)
+  `send_attempt_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ticket_id` (`ticket_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ;');
 
@@ -118,6 +121,21 @@ CREATE TABLE IF NOT EXISTS `'. $this->table .'` (
     if (!pwg_db_num_rows($query))
     {
       pwg_query('ALTER TABLE `'.$this->table.'` ADD `failed_message` TEXT NULL DEFAULT NULL;');
+    }
+
+    // 0.0.6beta => 0.0.7beta
+    $query = pwg_query('SHOW COLUMNS FROM `'.$this->table.'` LIKE "send_attempt_at";');
+    if (!pwg_db_num_rows($query))
+    {
+      pwg_query('
+ALTER TABLE `'.$this->table.'`
+  DROP PRIMARY KEY,
+  ADD `id` int(11) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST,
+  MODIFY `ticket_id` CHAR(36) NULL DEFAULT NULL,
+  ADD UNIQUE KEY `ticket_id` (`ticket_id`),
+  MODIFY `status` enum(\'unsent\',\'pending\',\'failed\',\'completed\') NOT NULL,
+  ADD `send_attempt_at` TIMESTAMP NULL DEFAULT NULL
+;');
     }
   }
 
