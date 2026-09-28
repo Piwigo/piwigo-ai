@@ -406,6 +406,26 @@ function p_ai_save_ticket($data)
   return isset($result['errors']) ? $result : 'Ticket updated';
 }
 
+function p_ai_valid_embedding($embedding)
+{
+  if (!is_array($embedding) || count($embedding) !== P_AI_EMBEDDING_DIMENSION)
+  {
+    return null;
+  }
+
+  $vector = array();
+  foreach ($embedding as $value)
+  {
+    if (!is_numeric($value))
+    {
+      return null;
+    }
+    $vector[] = (float)$value;
+  }
+
+  return $vector;
+}
+
 // batch-save tickets in a few bulk queries. $known reuses already-fetched rows.
 function p_ai_save_tickets(array $tickets, array $known = array())
 {
@@ -527,9 +547,23 @@ SELECT id
     );
 
     // embedding (per-row: needs a SQL function, unfit for mass_updates)
-    if (!empty($result['embedding']) && is_array($result['embedding']) && $is_compatible)
+    if ($is_compatible && !empty($result['embedding']))
     {
-      $embeddings[$image_id] = pwg_db_real_escape_string(json_encode($result['embedding']));
+      $vector = p_ai_valid_embedding($result['embedding']);
+      if (null === $vector)
+      {
+        $logger->warn('[p_ai_save_tickets] Invalid embedding ignored for image '.$image_id
+          .' ('.(is_array($result['embedding']) ? count($result['embedding']) : 0).' values, expected '.P_AI_EMBEDDING_DIMENSION.')');
+      }
+      else
+      {
+        $embeddings[$image_id] = array(
+          'vector' => pwg_db_real_escape_string(json_encode($vector)),
+          'model' => !empty($result['embedding_model']) && is_string($result['embedding_model'])
+            ? '\''.pwg_db_real_escape_string(substr($result['embedding_model'], 0, 255)).'\''
+            : 'NULL',
+        );
+      }
     }
 
     // tags (names pre-escaped: tag_id_from_tag_name expects escaped input)
@@ -571,11 +605,12 @@ SELECT id
     );
   }
 
-  foreach ($embeddings as $image_id => $emb)
+  foreach ($embeddings as $image_id => $embedding)
   {
     pwg_query('
 UPDATE `'.IMAGES_TABLE.'`
-  SET `embedding` = '.$vec_fn.'(\''.$emb.'\')
+  SET `embedding` = '.$vec_fn.'(\''.$embedding['vector'].'\'),
+    `embedding_model` = '.$embedding['model'].'
   WHERE id = '.$image_id.'
 ;');
   }
