@@ -672,23 +672,6 @@ function p_ai_parse_db_version($db_version)
   return $matches[1] ?? '0.0.0';
 }
 
-function p_ai_migrate_db()
-{
-  if (!p_ai_check_db_compatibility(true)) return;
-  
-  $query = pwg_query('SHOW COLUMNS FROM `'.IMAGES_TABLE.'` LIKE "embedding";');
-  if (pwg_db_num_rows($query))
-  {
-    pwg_query('ALTER TABLE `'.IMAGES_TABLE.'` MODIFY `embedding` VECTOR(512) NULL DEFAULT NULL;');
-  }
-
-  $query = pwg_query('SHOW COLUMNS FROM `'.TAGS_TABLE.'` LIKE "embedding";');
-  if (pwg_db_num_rows($query))
-  {
-    pwg_query('ALTER TABLE `'.TAGS_TABLE.'` MODIFY `embedding` VECTOR(512) NULL DEFAULT NULL;');
-  }
-}
-
 function p_ai_check_connection($default_conf)
 {
   global $conf;

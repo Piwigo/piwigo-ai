@@ -263,7 +263,8 @@ function p_ws_ai_check_compatibility($params)
 
   if ($is_compatible)
   {
-    p_ai_migrate_db();
+    include_once(P_AI_PATH . 'include/migrations.inc.php');
+    p_ai_migrate_compatibility_db();
     return true;
   }
 
