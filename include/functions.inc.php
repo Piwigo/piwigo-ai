@@ -61,6 +61,22 @@ function p_ai_decode_response($res, $status)
   return $decoded;
 }
 
+// no status: the server did not answer at all
+function p_ai_error_message(array $response)
+{
+  if (empty($response['status']))
+  {
+    return l10n('Piwigo AI server unreachable');
+  }
+
+  if (401 === $response['status'])
+  {
+    return l10n('No API key configured or the key is invalid. Please check your settings.');
+  }
+
+  return $response['errors'] ?? l10n('An error occurred with the Piwigo AI server');
+}
+
 function p_ai_request($method, $path, $data = null, $multipart = false, $timeout = 10)
 {
   global $conf;

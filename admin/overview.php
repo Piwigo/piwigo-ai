@@ -23,6 +23,11 @@ $statistiques = p_ai_get_stats();
 $credits = p_ai_get('/credits');
 $health = p_ai_get('/health');
 
+if (!isset($credits['credits']))
+{
+  $page['errors'][] = p_ai_error_message($credits);
+}
+
 // +-----------------------------------------------------------------------+
 // | template init                                                         |
 // +-----------------------------------------------------------------------+
@@ -30,7 +35,7 @@ $health = p_ai_get('/health');
 $template->assign(array(
   'PWG_TOKEN' => get_pwg_token(),
   'P_AI_STATS' => $statistiques,
-  'P_AI_CREDITS' => $credits['credits'] ?? 0,
+  'P_AI_CREDITS' => $credits['credits'] ?? null,
   'P_AI_SERVER_ONLINE' => $health['up'] ?? false,
   'P_AI_ANALYSIS_UP' => $health['ai_server_up'] ?? null,
   'P_AI_SERVER_DOMAIN' => preg_replace("(^https?://)", "", $conf['piwigo_ai']['url_server_ai']),

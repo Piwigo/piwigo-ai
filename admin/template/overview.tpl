@@ -92,7 +92,7 @@ const str_error_compatibility = "{'The database is still not compatible with the
               <p class="text-sm font-medium">{'credits left'|translate}</p>
               <p class="text-[10px] text-gray-400">{'No expiration'|translate}</p>
             </div>
-            <p class="text-xl font-bold">{$P_AI_CREDITS}</p>
+            <p class="text-xl font-bold">{if isset($P_AI_CREDITS)}{$P_AI_CREDITS}{else}—{/if}</p>
           </div>
 
         </div>

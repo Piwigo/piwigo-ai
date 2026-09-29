@@ -20,12 +20,12 @@ $result = p_ai_get('/credits');
 // +-----------------------------------------------------------------------+
 
 $template->assign(array(
-  'P_AI_CREDITS'=> $result['credits'] ?? 0,
+  'P_AI_CREDITS'=> $result['credits'] ?? null,
 ));
 
 if (!isset($result['credits']))
 {
-  $page['errors'][] = l10n('Piwigo AI server unreachable');
+  $page['errors'][] = p_ai_error_message($result);
 }
 
 $template->set_filename('p_ai_admin_content', P_AI_REALPATH . '/admin/template/credits.tpl');
