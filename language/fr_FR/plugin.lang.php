@@ -90,3 +90,5 @@ $lang['%d photo will be sent to Piwigo AI later'] = '%d photo sera envoyée à P
 $lang['%d photos will be sent to Piwigo AI later'] = '%d photos seront envoyées à Piwigo AI plus tard';
 $lang['Piwigo AI: %s was not analyzed: %s'] = 'Piwigo AI : %s n\'a pas été analysée : %s';
 $lang['Piwigo AI: %d photos were not analyzed: %s'] = 'Piwigo AI : %d photos n\'ont pas été analysées : %s';
+$lang['Embedding'] = 'Embedding';
+$lang['Compute the embedding of each uploaded photo, used to find similar photos and to search in natural language'] = 'Calcule l\'embedding de chaque photo importée, utilisé pour trouver les photos similaires et pour la recherche en langage naturel';

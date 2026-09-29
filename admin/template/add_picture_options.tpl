@@ -35,6 +35,14 @@ const str_p_ai_error_many = "{'Piwigo AI: %d photos were not analyzed: %s'|trans
           <input type="checkbox" name="ocr" id="pAiUploadOCR" checked>
           {'OCR'|translate}
         </label>
+
+        {if $P_AI_EMBEDDING_ENABLED}
+        <label class="font-checkbox flex! items-center tiptip" title="{'Compute the embedding of each uploaded photo, used to find similar photos and to search in natural language'|translate}">
+          <span class="icon-check" style="margin: 0; padding: 0; border-radius: 0; font-size: 12px;"></span>
+          <input type="checkbox" name="embedding" id="pAiUploadEmbedding" checked>
+          {'Embedding'|translate}
+        </label>
+        {/if}
       </div>
     </div>
   </div>

@@ -17,9 +17,11 @@ function p_ai_loc_end_add_uploaded_file(array $image_info)
     'caption' => filter_var($_POST['caption'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
     'tagging' => filter_var($_POST['tagging'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
     'ocr' => filter_var($_POST['ocr'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
+    'embedding' => (filter_var($_POST['embedding'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false)
+      && p_ai_check_db_compatibility(),
   ];
 
-  if (!$options['caption'] && !$options['tagging'] && !$options['ocr']) return;
+  if (!$options['caption'] && !$options['tagging'] && !$options['ocr'] && !$options['embedding']) return;
 
   $response = p_ai_submit_image($image_info, $options);
   if (isset($response['unsent']))

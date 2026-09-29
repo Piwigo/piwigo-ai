@@ -130,7 +130,7 @@ function p_ai_analyze($image, $callback, $options = [])
     'caption' => ($options['caption'] ?? true) ? '1' : '0',
     'tagging' => ($options['tagging'] ?? true) ? '1' : '0',
     'ocr' => ($options['ocr'] ?? true) ? '1' : '0',
-    'embedding' => p_ai_check_db_compatibility() ? '1' : '0',
+    'embedding' => (($options['embedding'] ?? true) && p_ai_check_db_compatibility()) ? '1' : '0',
     'language' => get_default_language(),
   );
 

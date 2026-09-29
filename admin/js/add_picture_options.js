@@ -13,6 +13,7 @@ const p_ai_upload = $('#togglePwgAiMode');
 const p_ai_upload_caption = $('#pAiUploadCaption');
 const p_ai_upload_tagging = $('#pAiUploadTagging');
 const p_ai_upload_ocr = $('#pAiUploadOCR');
+const p_ai_upload_embedding = $('#pAiUploadEmbedding');
 
 /*--------------
 On DOM load
@@ -61,6 +62,7 @@ $(function() {
           params.caption = p_ai_upload_caption.is(':checked');
           params.tagging = p_ai_upload_tagging.is(':checked');
           params.ocr = p_ai_upload_ocr.is(':checked');
+          params.embedding = p_ai_upload_embedding.is(':checked');
         }
         up.setOption('multipart_params', params);
       }, -1);
@@ -147,6 +149,7 @@ function p_ai_show_upload_report() {
 function is_ai_checked() {
   return p_ai_upload.is(':checked')
   && (p_ai_upload_caption.is(':checked') 
-    || p_ai_upload_tagging.is(':checked') 
-    || p_ai_upload_ocr.is(':checked'));
+    || p_ai_upload_tagging.is(':checked')
+    || p_ai_upload_ocr.is(':checked')
+    || p_ai_upload_embedding.is(':checked'));
 }

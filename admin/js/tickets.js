@@ -197,6 +197,7 @@ function render_row(ticket) {
   if (opts.caption) actions += ' <span class="p-ai-line-actions">Description</span>';
   if (opts.ocr) actions += ' <span class="p-ai-line-actions">OCR</span>';
   if (opts.tagging) actions += ' <span class="p-ai-line-actions">Tags</span>';
+  if (opts.embedding) actions += ' <span class="p-ai-line-actions">Embedding</span>';
 
   const cost = ticket.cost
     ? '<i class="icon-ai-token"></i> ' + ticket.cost
