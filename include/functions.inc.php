@@ -270,7 +270,7 @@ function p_ai_send_ticket($id, array $image_info, array $options)
     array(
       'ticket_id'    => pwg_db_real_escape_string($ticket['id']),
       'status'       => pwg_db_real_escape_string($ticket['status']),
-      'options'      => pwg_db_real_escape_string(json_encode($ticket['options'])),
+      'options'      => pwg_db_real_escape_string(json_encode($ticket['input'] ?? $ticket['options'] ?? null)),
       'cost'         => (int)$ticket['cost'],
       'use_callback' => $callback ? 'true' : 'false',
     ),
