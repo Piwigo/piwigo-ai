@@ -87,6 +87,7 @@ class piwigo_ai_maintain extends PluginMaintain
 
     conf_delete_param('piwigo_ai');
     conf_delete_param('piwigo_ai_db_compatibility');
+    conf_delete_param('piwigo_ai_vector_function');
     conf_delete_param('piwigo_ai_outdated');
     conf_delete_param('piwigo_ai_migrations');
   }

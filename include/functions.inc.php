@@ -471,7 +471,7 @@ SELECT *
   }
 
   $is_compatible = p_ai_check_db_compatibility();
-  $vec_fn = p_ai_is_mariadb() ? 'VEC_FromText' : 'STRING_TO_VECTOR';
+  $vec_fn = conf_get_param('piwigo_ai_vector_function');
 
   // which target images still exist? (one query, for the completed tickets)
   $image_ids = array();
@@ -686,41 +686,49 @@ UPDATE `'.TAGS_TABLE.'`
 
 function p_ai_check_db_compatibility($force = false)
 {
+  global $mysqli;
+
   $is_compatible = conf_get_param('piwigo_ai_db_compatibility', null);
 
-  // if we have already checked the compatibility return the stored data
-  if (!is_null($is_compatible) && !$force)
+  // a compatible gallery checked before the vector function was stored is checked again once
+  if (!is_null($is_compatible) && !$force
+    && (!$is_compatible || !empty(conf_get_param('piwigo_ai_vector_function'))))
   {
     return $is_compatible;
   }
 
-  $db_version =  pwg_get_db_version();
-  $version = p_ai_parse_db_version($db_version);
-  $is_mariadb = p_ai_is_mariadb($db_version);
+  // tested on $mysqli directly: on the expected failure, pwg_query would stop the script (PHP < 8.1)
+  $vector_function = null;
+  foreach (array('VEC_FromText', 'STRING_TO_VECTOR') as $function)
+  {
+    try
+    {
+      $result = $mysqli->query('SELECT '.$function.'(\'[1]\');');
+    }
+    catch (Throwable $e)
+    {
+      $result = false;
+    }
 
-  if ($is_mariadb) {
-    $is_compatible = version_compare($version, '11.7.0', '>=');
+    if (false !== $result)
+    {
+      $vector_function = $function;
+      break;
+    }
+  }
+
+  $is_compatible = null !== $vector_function;
+  conf_update_param('piwigo_ai_db_compatibility', $is_compatible, true);
+  if ($is_compatible)
+  {
+    conf_update_param('piwigo_ai_vector_function', $vector_function, true);
   }
   else
   {
-    $is_compatible =  version_compare($version, '9.0.0', '>=');
+    conf_delete_param('piwigo_ai_vector_function');
   }
 
-  conf_update_param('piwigo_ai_db_compatibility', $is_compatible, true);
   return $is_compatible;
-}
-
-function p_ai_is_mariadb($db_version = null)
-{
-  return stripos($db_version ?? pwg_get_db_version(), 'MariaDB') !== false;
-}
-
-function p_ai_parse_db_version($db_version)
-{
-  // legacy compatibility prefix sometimes seen on some environments
-  $parsed_db_version = preg_replace('/^5\.5\.5-/', '', $db_version);
-  preg_match('/^(\d+\.\d+\.\d+)/', $parsed_db_version, $matches);
-  return $matches[1] ?? '0.0.0';
 }
 
 function p_ai_check_connection($default_conf)
