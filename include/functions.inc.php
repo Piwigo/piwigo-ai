@@ -47,6 +47,7 @@ function p_ai_decode_response($res, $status)
     return array(
       'errors' => $first_error[0] ?? $decoded['message'] ?? l10n('An error occurred with the Piwigo AI server'),
       'status' => $status,
+      'body' => $decoded,
     );
   }
 
@@ -162,6 +163,147 @@ function p_ai_analyze($image, $callback, $options = [])
   }
 
   return p_ai_request('POST', '/tickets', $post_data, true, 300);
+}
+
+// the text a visitor reads: multilingual markup rendered, no html, what the AI embeds
+function p_ai_tag_text(array $tag)
+{
+  $text = trigger_change('render_tag_name', $tag['name'], $tag);
+  $text = html_entity_decode(strip_tags((string)$text), ENT_QUOTES, 'UTF-8');
+  $text = trim((string)preg_replace('/\s+/u', ' ', $text));
+
+  return mb_substr($text, 0, 255, 'UTF-8');
+}
+
+function p_ai_index_tags()
+{
+  global $conf, $logger;
+
+  if (!p_ai_check_db_compatibility())
+  {
+    return array('errors' => l10n('Your database cannot store embeddings: tags cannot be indexed.'), 'code' => 400);
+  }
+
+  $query = '
+SELECT id, name, url_name
+  FROM '.TAGS_TABLE.'
+  WHERE embedding IS NULL
+  ORDER BY id
+;';
+  $tags = array();
+  foreach (query2array($query) as $row)
+  {
+    $text = p_ai_tag_text($row);
+    if ('' !== $text)
+    {
+      $tags[] = array('id' => (int)$row['id'], 'name' => $text);
+    }
+  }
+
+  $total = count($tags);
+  if (0 === $total)
+  {
+    return array('ticket_id' => null, 'sent' => 0, 'total' => 0);
+  }
+
+  $callback = empty($conf['piwigo_ai']['is_accessible'])
+    ? null
+    : get_absolute_root_url().'ws.php?format=json&method=pwg.ai.callback';
+
+  $ticket = null;
+  $sent = 0;
+  foreach (array_chunk($tags, P_AI_TAGS_PER_REQUEST) as $chunk)
+  {
+    $data = array('tags' => $chunk);
+    if (null === $ticket)
+    {
+      $data['total'] = $total;
+      if (null !== $callback)
+      {
+        $data['callback_url'] = $callback;
+      }
+    }
+    else
+    {
+      $data['ticket_uuid'] = $ticket['id'];
+    }
+
+    $response = p_ai_post('/tickets/embed/tags', $data, 60);
+
+    if (null === $ticket && 409 === ($response['status'] ?? null) && !empty($response['body']['ticket_uuid']))
+    {
+      return p_ai_follow_tags_indexation($response['body']['ticket_uuid'], $callback);
+    }
+
+    if (!empty($response['errors']))
+    {
+      $logger->error('[PIWIGO_AI][INDEX TAGS] '.$sent.' of '.$total.' tags sent: '.$response['errors']);
+      $message = p_ai_error_message($response);
+
+      return null === $ticket
+        ? array('errors' => $message, 'code' => 502)
+        : array('errors' => l10n('%d of %d tags were sent: %s', $sent, $total, $message), 'code' => 502);
+    }
+
+    if (empty($response['data']['id']))
+    {
+      return array('errors' => l10n('No ticket ID in Piwigo AI response'), 'code' => 502);
+    }
+
+    if (null === $ticket)
+    {
+      p_ai_insert_tags_indexation($response['data']['id'], $callback, $response['data']);
+    }
+
+    $ticket = $response['data'];
+    $sent += count($chunk);
+  }
+
+  single_update(
+    P_AI_TICKETS_TABLE,
+    array('options' => pwg_db_real_escape_string(json_encode($ticket['input'] ?? null))),
+    array('ticket_id' => pwg_db_real_escape_string($ticket['id']))
+  );
+
+  return array('ticket_id' => $ticket['id'], 'sent' => $sent, 'total' => $total);
+}
+
+function p_ai_insert_tags_indexation($ticket_id, $callback, array $ticket = array())
+{
+  single_insert(
+    P_AI_TICKETS_TABLE,
+    array(
+      'ticket_id'    => pwg_db_real_escape_string($ticket_id),
+      'type'         => 'embed_tags',
+      'status'       => 'pending',
+      'use_callback' => null !== $callback ? 'true' : 'false',
+      'cost'         => (int)($ticket['cost'] ?? 0),
+      'options'      => pwg_db_real_escape_string(json_encode($ticket['input'] ?? null)),
+    )
+  );
+}
+
+// the backend already embeds tags of this gallery: follow that indexation if this Piwigo lost it
+function p_ai_follow_tags_indexation($ticket_id, $callback)
+{
+  $query = '
+SELECT id
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE ticket_id = \''.pwg_db_real_escape_string($ticket_id).'\'
+;';
+  if (pwg_db_num_rows(pwg_query($query)))
+  {
+    return array('errors' => l10n('A tags indexation is already in progress.'), 'code' => 409);
+  }
+
+  p_ai_insert_tags_indexation($ticket_id, $callback);
+
+  return array(
+    'ticket_id' => $ticket_id,
+    'sent' => 0,
+    'total' => null,
+    'message' => l10n('A tags indexation was already in progress, it is followed now.'),
+  );
 }
 
 function p_ai_get(string $url, int $timeout = 10)

@@ -98,6 +98,21 @@ function p_ai_add_methods($arr)
   );
 
   $service->addMethod(
+    'pwg.ai.index_tags',
+    'p_ws_ai_index_tags',
+    array(
+      'pwg_token' => array(),
+    ),
+    'Send the tags without embedding to the AI server, as one indexation.',
+    null,
+    array(
+      'hidden' => false,
+      'post_only' => true,
+      'admin_only' => true,
+    )
+  );
+
+  $service->addMethod(
     'pwg.ai.tickets.getList',
     'p_ws_ai_tickets_getList',
     array(
@@ -407,6 +422,31 @@ UPDATE '.P_AI_TICKETS_TABLE.'
   }
 
   return array('processed' => $count);
+}
+
+/**
+ * `WS Piwigo AI` : Send the tags without embedding to the AI server
+ */
+function p_ws_ai_index_tags($params)
+{
+  if (!connected_with_pwg_ui())
+  {
+    return new PwgError(401, 'Access Denied');
+  }
+
+  if (get_pwg_token() != $params['pwg_token'])
+  {
+    return new PwgError(403, l10n('Invalid security token'));
+  }
+
+  $result = p_ai_index_tags();
+
+  if (isset($result['errors']))
+  {
+    return new PwgError($result['code'] ?? 500, $result['errors']);
+  }
+
+  return $result;
 }
 
 /**

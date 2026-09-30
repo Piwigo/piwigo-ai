@@ -93,3 +93,7 @@ $lang['Piwigo AI: %d photos were not analyzed: %s'] = 'Piwigo AI: %d photos were
 $lang['Embedding'] = 'Embedding';
 $lang['Compute the embedding of each uploaded photo, used to find similar photos and to search in natural language'] = 'Compute the embedding of each uploaded photo, used to find similar photos and to search in natural language';
 $lang['Tags indexation'] = 'Tags indexation';
+$lang['Your database cannot store embeddings: tags cannot be indexed.'] = 'Your database cannot store embeddings: tags cannot be indexed.';
+$lang['%d of %d tags were sent: %s'] = '%d of %d tags were sent: %s';
+$lang['A tags indexation is already in progress.'] = 'A tags indexation is already in progress.';
+$lang['A tags indexation was already in progress, it is followed now.'] = 'A tags indexation was already in progress, it is followed now.';
