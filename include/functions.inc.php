@@ -306,6 +306,31 @@ SELECT id
   );
 }
 
+function p_ai_get_tags_indexation_state()
+{
+  list($total, $indexed) = pwg_db_fetch_row(pwg_query('
+SELECT COUNT(*), COUNT(embedding)
+  FROM '.TAGS_TABLE.'
+;'));
+
+  $last = pwg_db_fetch_assoc(pwg_query('
+SELECT status, failed_message
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE type = \'embed_tags\'
+  ORDER BY id DESC
+  LIMIT 1
+;'));
+  $in_progress = 'pending' === ($last['status'] ?? null);
+
+  return array(
+    'total' => (int)$total,
+    'indexed' => (int)$indexed,
+    'to_index' => (int)$total - (int)$indexed,
+    'in_progress' => $in_progress,
+    'last_message' => $last && !$in_progress ? $last['failed_message'] : null,
+  );
+}
+
 function p_ai_get_pending_tags_indexations()
 {
   $query = '

@@ -6,6 +6,11 @@ const p_ai_str_status_completed = "{'Completed'|translate|escape:javascript}";
 const p_ai_str_status_failed = "{'Failed'|translate|escape:javascript}";
 const p_ai_str_status_pending = "{'Pending'|translate|escape:javascript}";
 const p_ai_str_tags_indexation = "{'Tags indexation'|translate|escape:javascript}";
+const p_ai_str_index_tags = "{'Index %d tags'|translate|escape:javascript}";
+const p_ai_str_all_tags_indexed = "{'All tags are indexed'|translate|escape:javascript}";
+const p_ai_str_indexation_in_progress = "{'Indexation in progress…'|translate|escape:javascript}";
+const p_ai_str_indexation_started = "{'The tags indexation has started.'|translate|escape:javascript}";
+let p_ai_tags_state = {$P_AI_TAGS_STATE};
 const str_success = "{'Success'|translate|escape:javascript}"
 const str_success_compatibility = "{'Compatibility check successful, changes have been applied.'|translate|escape:javascript}"
 const str_error_compatibility = "{'The database is still not compatible with the required prerequisites.'|translate|escape:javascript}"
@@ -55,23 +60,40 @@ const str_error_compatibility = "{'The database is still not compatible with the
 
     </div>
 
-    {* --- Main Row --- *}
-    <div class="grid grid-cols-[2fr_1fr] gap-3">
+    {* --- Main Rows --- *}
+    <div class="flex flex-col gap-3">
 
-      {* Recent analyzed tickets *}
-      <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4">
-        <h3 class="font-bold text-sm text-gray-400 dark:text-[#9e9e9e] mb-3">{'Recently analyzed'|translate}</h3>
+      <div class="grid grid-cols-[2fr_1fr] gap-3">
 
-        <div id="p-ai-recent-loading" class="py-3 text-xs text-gray-400">{'Loading...'|translate}</div>
-        <div id="p-ai-recent-list"></div>
+        {* Tags indexation *}
+        {if $P_AI_COMPATIBLE}
+        <div id="p-ai-indexation" class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4">
+          <h3 class="font-bold text-sm text-gray-400 dark:text-[#9e9e9e] mb-4">{'Tags indexation'|translate} <span class="icon-help-circled tiptip cursor-help" title="{'The indexation computes an embedding of each tag, so that Piwigo AI can then choose your own tags for your photos.'|translate}"></span></h3>
 
-        <div class="mt-3 pt-3 border-t border-gray-100 dark:border-[#3f3f3f]">
-          <a href="admin.php?page=plugin-piwigo_ai-tickets" class="text-xs text-[#F3A73B] hover:underline">{'See all tickets'|translate} →</a>
+          <div class="mb-4">
+            <div class="flex items-baseline justify-between mb-0.5">
+              <span class="text-sm font-medium">{'Indexed tags'|translate}</span>
+              <span class="text-xs text-gray-400"><span id="p-ai-tags-indexed"></span> / <span id="p-ai-tags-total"></span></span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-[#444] rounded-full h-1.5">
+              <div id="p-ai-tags-bar" class="h-1.5 rounded-full bg-[#F3A73B]" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-gray-100 dark:border-[#3f3f3f] flex items-center justify-between">
+            <p id="p-ai-tags-message" class="text-xs text-gray-400"></p>
+            <label class="head-button-2 gap-1" id="p-ai-btn-index-tags"><i class="icon-tags"></i> <span id="p-ai-btn-index-tags-label"></span></label>
+          </div>
+          {if $P_AI_POST_MAX_SIZE_LOW}
+          <p class="text-[10px] text-gray-400 mt-2"><i class="icon-attention"></i> {'The PHP post_max_size is below 8 MB: the tag embeddings will come by polling, more slowly.'|translate}</p>
+          {/if}
         </div>
-      </div>
-
-      {* Right column *}
-      <div class="flex flex-col gap-3">
+        {else}
+        <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4">
+          <h3 class="font-bold text-sm text-gray-400 dark:text-[#9e9e9e] mb-4">{'Tags indexation'|translate}</h3>
+          <p class="text-xs text-gray-400">{'Your database cannot store embeddings: tags cannot be indexed.'|translate}</p>
+        </div>
+        {/if}
 
         {* Session usage *}
         <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4">
@@ -96,6 +118,22 @@ const str_error_compatibility = "{'The database is still not compatible with the
             <p class="text-xl font-bold">{if isset($P_AI_CREDITS)}{$P_AI_CREDITS}{else}—{/if}</p>
           </div>
 
+        </div>
+
+      </div>
+
+      <div class="grid grid-cols-[2fr_1fr] gap-3">
+
+        {* Recent analyzed tickets *}
+        <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4">
+          <h3 class="font-bold text-sm text-gray-400 dark:text-[#9e9e9e] mb-3">{'Recently analyzed'|translate}</h3>
+
+          <div id="p-ai-recent-loading" class="py-3 text-xs text-gray-400">{'Loading...'|translate}</div>
+          <div id="p-ai-recent-list"></div>
+
+          <div class="mt-3 pt-3 border-t border-gray-100 dark:border-[#3f3f3f]">
+            <a href="admin.php?page=plugin-piwigo_ai-tickets" class="text-xs text-[#F3A73B] hover:underline">{'See all tickets'|translate} →</a>
+          </div>
         </div>
 
         {* AI Server status *}

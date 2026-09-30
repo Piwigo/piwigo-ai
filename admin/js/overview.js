@@ -7,7 +7,104 @@ $(function() {
   });
 
   load_recent_tickets();
+
+  if ($('#p-ai-indexation').length) {
+    render_tags_state(p_ai_tags_state);
+    $('#p-ai-btn-index-tags').on('click', start_tags_indexation);
+    if (p_ai_tags_state.in_progress) follow_tags_indexation();
+  }
 });
+
+let p_ai_tags_following = false;
+
+function render_tags_state(state) {
+  p_ai_tags_state = state;
+  const pct = state.total > 0 ? Math.round(state.indexed / state.total * 100) : 0;
+  $('#p-ai-tags-indexed').text(state.indexed);
+  $('#p-ai-tags-total').text(state.total);
+  $('#p-ai-tags-bar').css('width', pct + '%');
+  $('#p-ai-tags-message').text(state.last_message || '');
+
+  let label = p_ai_str_all_tags_indexed;
+  let disabled = true;
+  if (state.in_progress) {
+    label = p_ai_str_indexation_in_progress;
+  } else if (state.to_index > 0) {
+    label = p_ai_str_index_tags.replace('%d', state.to_index);
+    disabled = false;
+  }
+  $('#p-ai-btn-index-tags-label').text(label);
+  $('#p-ai-btn-index-tags').css({ opacity: disabled ? 0.5 : 1, 'pointer-events': disabled ? 'none' : '' });
+}
+
+function start_tags_indexation() {
+  if (p_ai_tags_state.in_progress || p_ai_tags_state.to_index === 0) return;
+  render_tags_state($.extend({}, p_ai_tags_state, { in_progress: true }));
+
+  $.ajax({
+    url: 'ws.php?format=json&method=pwg.ai.index_tags',
+    type: 'POST',
+    dataType: 'json',
+    data: { pwg_token: p_ai_pwg_token },
+    success: function(res) {
+      if (res.stat === 'ok') {
+        $.jGrowl(res.result.message || p_ai_str_indexation_started, { theme: 'success', header: str_success, life: 4000, sticky: false });
+        follow_tags_indexation();
+        return;
+      }
+      $.jGrowl(res.message, { theme: 'error', header: 'Oops !', sticky: true });
+      refresh_tags_state();
+    },
+    error: function() {
+      $.jGrowl(p_ai_str_tags_indexation, { theme: 'error', header: 'Oops !', sticky: true });
+      refresh_tags_state();
+    }
+  });
+}
+
+// the worker only runs on page views: while this page is open, it is run by hand
+function follow_tags_indexation() {
+  if (p_ai_tags_following) return;
+  p_ai_tags_following = true;
+  tags_indexation_round();
+}
+
+function tags_indexation_round() {
+  $.ajax({
+    url: 'ws.php?format=json&method=pwg.ai.check_tickets',
+    type: 'POST',
+    dataType: 'json',
+    data: { pwg_token: p_ai_pwg_token, force: 1 },
+    complete: function() {
+      refresh_tags_state(function(state) {
+        if (state.in_progress) {
+          setTimeout(tags_indexation_round, 5000);
+        } else {
+          p_ai_tags_following = false;
+        }
+      });
+    }
+  });
+}
+
+function refresh_tags_state(then) {
+  $.ajax({
+    url: 'ws.php?format=json&method=pwg.ai.tags_indexation',
+    type: 'GET',
+    dataType: 'json',
+    success: function(res) {
+      if (res.stat !== 'ok') {
+        p_ai_tags_following = false;
+        return;
+      }
+      render_tags_state(res.result);
+      if (then) then(res.result);
+    },
+    error: function() {
+      p_ai_tags_following = false;
+    }
+  });
+}
 
 function load_recent_tickets() {
   $.ajax({

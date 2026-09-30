@@ -130,6 +130,19 @@ function p_ai_add_methods($arr)
   );
 
   $service->addMethod(
+    'pwg.ai.tags_indexation',
+    'p_ws_ai_tags_indexation',
+    array(),
+    'Returns how many tags are indexed and whether an indexation is in progress.',
+    null,
+    array(
+      'hidden' => false,
+      'post_only' => false,
+      'admin_only' => true,
+    )
+  );
+
+  $service->addMethod(
     'pwg.ai.tickets.getList',
     'p_ws_ai_tickets_getList',
     array(
@@ -502,6 +515,14 @@ function p_ws_ai_index_tags($params)
   }
 
   return $result;
+}
+
+/**
+ * `WS Piwigo AI` : State of the tags indexation
+ */
+function p_ws_ai_tags_indexation($params)
+{
+  return p_ai_get_tags_indexation_state();
 }
 
 /**
