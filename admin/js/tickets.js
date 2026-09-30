@@ -190,6 +190,7 @@ function render_row(ticket) {
   let opts = {};
   try { opts = JSON.parse(ticket.options || '{}'); } catch(e) {}
 
+  const is_embed_tags = ticket.type === 'embed_tags';
   const name = $('<span>').text(ticket.name || ticket.file || '').html();
   const photo_link = p_ai_root_url + 'admin.php?page=photo-' + ticket.image_id;
 
@@ -198,6 +199,11 @@ function render_row(ticket) {
   if (opts.ocr) actions += ' <span class="p-ai-line-actions">OCR</span>';
   if (opts.tagging) actions += ' <span class="p-ai-line-actions">Tags</span>';
   if (opts.embedding) actions += ' <span class="p-ai-line-actions">Embedding</span>';
+  if (is_embed_tags) actions += ' <span class="p-ai-line-actions">Embedding</span>';
+
+  const subject = is_embed_tags
+    ? '<span class="icon-tags mr-1"></span><span class="font-bold">' + p_ai_str_tags_indexation + '</span>'
+    : '<span class="icon-picture mr-1"></span><a class="font-bold" target="_blank" href="' + photo_link + '">' + name + '</a>';
 
   const cost = ticket.cost
     ? '<i class="icon-ai-token"></i> ' + ticket.cost
@@ -215,7 +221,7 @@ function render_row(ticket) {
   }
 
   return '<div class="grid grid-cols-[2fr_2.5fr_1fr_2fr_1fr] items-center min-h-10 mb-2.5 shadow-sm text-start bg-[#fafafa] dark:bg-[#333] dark:text-[#a1a1a1]">'
-    + '<div class="overflow-hidden text-ellipsis whitespace-nowrap mr-2 pl-2"><span class="icon-picture mr-1"></span><a class="font-bold" target="_blank" href="' + photo_link + '">' + name + '</a></div>'
+    + '<div class="overflow-hidden text-ellipsis whitespace-nowrap mr-2 pl-2">' + subject + '</div>'
     + '<div class="flex items-center gap-1.5 flex-wrap px-2">' + actions + '</div>'
     + '<div class="px-2.5 text-gray-500 text-sm">' + cost + '</div>'
     + '<div class="overflow-hidden whitespace-nowrap px-2"><i class="icon-clock"></i> ' + date + '</div>'

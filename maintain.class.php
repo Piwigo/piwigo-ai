@@ -84,6 +84,7 @@ class piwigo_ai_maintain extends PluginMaintain
     pwg_query('ALTER TABLE `'. IMAGES_TABLE .'` DROP COLUMN `embedding_model`;');
     pwg_query('ALTER TABLE `'. TAGS_TABLE .'` DROP COLUMN `ai`;');
     pwg_query('ALTER TABLE `'. TAGS_TABLE .'` DROP COLUMN `embedding`;');
+    pwg_query('ALTER TABLE `'. TAGS_TABLE .'` DROP COLUMN `embedding_model`;');
 
     conf_delete_param('piwigo_ai');
     conf_delete_param('piwigo_ai_db_compatibility');

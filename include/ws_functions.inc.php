@@ -501,6 +501,7 @@ function p_ws_ai_retry_failed($params)
 SELECT id, image_id, options
   FROM ' . P_AI_TICKETS_TABLE . '
   WHERE status = \'failed\'
+    AND type = \'analysis\'
 ;';
 
   $failed_tickets = query2array($query);

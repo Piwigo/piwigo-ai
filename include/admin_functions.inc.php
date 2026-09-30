@@ -7,6 +7,7 @@ function p_ai_get_stats()
 SELECT count(*)
   FROM `'.P_AI_TICKETS_TABLE.'`
   WHERE status NOT IN (\'unsent\', \'pending\')
+    AND type = \'analysis\'
 ;';
   list($nb_of_completed_jobs) = pwg_db_fetch_row(pwg_query($query));
 

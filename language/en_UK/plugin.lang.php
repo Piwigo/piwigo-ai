@@ -92,3 +92,4 @@ $lang['Piwigo AI: %s was not analyzed: %s'] = 'Piwigo AI: %s was not analyzed: %
 $lang['Piwigo AI: %d photos were not analyzed: %s'] = 'Piwigo AI: %d photos were not analyzed: %s';
 $lang['Embedding'] = 'Embedding';
 $lang['Compute the embedding of each uploaded photo, used to find similar photos and to search in natural language'] = 'Compute the embedding of each uploaded photo, used to find similar photos and to search in natural language';
+$lang['Tags indexation'] = 'Tags indexation';

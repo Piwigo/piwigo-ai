@@ -36,6 +36,11 @@ function load_recent_tickets() {
 function render_recent_row(ticket, is_last) {
   const name = $('<span>').text(ticket.name || ticket.file || '').html();
   const photo_link = p_ai_root_url + 'admin.php?page=photo-' + ticket.image_id;
+  const subject = ticket.type === 'embed_tags'
+    ? '<i class="icon-tags text-gray-300 shrink-0"></i>'
+      + '<span class="text-sm font-medium truncate">' + p_ai_str_tags_indexation + '</span>'
+    : '<i class="icon-picture text-gray-300 shrink-0"></i>'
+      + '<a class="text-sm font-medium truncate hover:text-[#F3A73B]" href="' + photo_link + '">' + name + '</a>';
 
   let status_html;
   if (ticket.status === 'completed') {
@@ -49,8 +54,7 @@ function render_recent_row(ticket, is_last) {
   const border = is_last ? '' : ' border-b border-gray-100 dark:border-[#3f3f3f]';
   return '<div class="grid grid-cols-[1fr_auto_auto] items-center py-2' + border + '">'
     + '<div class="flex items-center gap-2 min-w-0">'
-    + '<i class="icon-picture text-gray-300 shrink-0"></i>'
-    + '<a class="text-sm font-medium truncate hover:text-[#F3A73B]" href="' + photo_link + '">' + name + '</a>'
+    + subject
     + '</div>'
     + '<span class="text-xs text-gray-400 px-3 shrink-0"><i class="icon-ai-token"></i> ' + (ticket.cost || '—') + '</span>'
     + status_html

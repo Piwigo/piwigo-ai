@@ -5,6 +5,7 @@ const p_ai_root_url = "{$ROOT_URL}";
 const p_ai_str_status_completed = "{'Completed'|translate|escape:javascript}";
 const p_ai_str_status_failed = "{'Failed'|translate|escape:javascript}";
 const p_ai_str_status_pending = "{'Pending'|translate|escape:javascript}";
+const p_ai_str_tags_indexation = "{'Tags indexation'|translate|escape:javascript}";
 const str_success = "{'Success'|translate|escape:javascript}"
 const str_success_compatibility = "{'Compatibility check successful, changes have been applied.'|translate|escape:javascript}"
 const str_error_compatibility = "{'The database is still not compatible with the required prerequisites.'|translate|escape:javascript}"

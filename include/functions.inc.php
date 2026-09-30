@@ -319,6 +319,7 @@ UPDATE '.P_AI_TICKETS_TABLE.'
 SELECT id, image_id, options
   FROM '.P_AI_TICKETS_TABLE.'
   WHERE status = \'unsent\'
+    AND type = \'analysis\'
     AND COALESCE(send_attempt_at, created_at) < NOW() - INTERVAL 10 MINUTE
   ORDER BY id
   LIMIT '.(int)$limit.'
@@ -374,6 +375,7 @@ function p_ai_get_pending_tickets()
 SELECT *
   FROM '.P_AI_TICKETS_TABLE.'
   WHERE status = \'pending\'
+    AND type = \'analysis\'
   LIMIT 500
 ;';
 

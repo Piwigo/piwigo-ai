@@ -9,6 +9,7 @@ const p_ai_str_empty_failed = "{'No failed tickets'|translate|escape:javascript}
 const p_ai_str_status_completed = "{'Completed'|translate|escape:javascript}";
 const p_ai_str_status_failed = "{'Failed'|translate|escape:javascript}";
 const p_ai_str_status_pending = "{'Pending'|translate|escape:javascript}";
+const p_ai_str_tags_indexation = "{'Tags indexation'|translate|escape:javascript}";
 const p_ai_str_tickets_processed = "{'%d tickets processed'|translate|escape:javascript}";
 const p_ai_str_tickets_retried = "{'%d tickets resubmitted'|translate|escape:javascript}";
 const p_ai_str_tickets_deleted = "{'%d tickets deleted'|translate|escape:javascript}";
