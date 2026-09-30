@@ -11,8 +11,25 @@ function p_ai_add_methods($arr)
   $service = &$arr[0];
 
   $service->addMethod(
+    'pwg.ai.callback',
+    'p_ws_ai_callback',
+    array(
+      'account_id' => array(),
+      'ticket' => array(),
+    ),
+    'Save a ticket pushed by the AI server: an analysis, a batch of tag embeddings or the end of an indexation',
+    null,
+    array(
+      'hidden' => false,
+      'post_only' => true,
+      'admin_only' => false,
+    )
+  );
+
+  // the callback url of the tickets sent before pwg.ai.callback
+  $service->addMethod(
     'pwg.ai.analyze',
-    'p_ws_ai_analyze',
+    'p_ws_ai_callback',
     array(
       'account_id' => array(),
       'ticket' => array(),
@@ -188,7 +205,7 @@ function p_ai_add_methods($arr)
 /**
  * `WS Piwigo AI` : Endpoint for server ai to callback the result
  */
-function p_ws_ai_analyze($params)
+function p_ws_ai_callback($params)
 {
   global $conf;
 
@@ -208,6 +225,34 @@ function p_ws_ai_analyze($params)
   if (!is_array($ticket) || empty($ticket['id']) || empty($ticket['status']))
   {
     return new PwgError(WS_ERR_INVALID_PARAM, 'Invalid ticket');
+  }
+
+  if (!empty($ticket['parent_uuid']))
+  {
+    if (!p_ai_is_tags_indexation($ticket['parent_uuid']))
+    {
+      return new PwgError(404, 'Indexation not found');
+    }
+
+    p_ai_save_tags_batch($ticket);
+    return 'Batch saved';
+  }
+
+  if ('embed_tags' === ($ticket['type'] ?? null))
+  {
+    if (!p_ai_is_tags_indexation($ticket['id']))
+    {
+      return new PwgError(404, 'Indexation not found');
+    }
+
+    // the backend acknowledges it on success: an error makes it push again later, to deliver the rest
+    p_ai_drain_tags_indexation($ticket['id'], 10);
+    if (p_ai_is_tags_indexation($ticket['id'], 'pending'))
+    {
+      return new PwgError(503, 'Batches not delivered yet');
+    }
+
+    return 'Indexation completed';
   }
 
   $save_ticket = p_ai_save_ticket($ticket);
@@ -349,11 +394,15 @@ function p_ws_ai_check_tickets($params)
     $count += p_ai_send_unsent_tickets($params['exec_id']);
   }
 
+  foreach (p_ai_get_pending_tags_indexations() as $indexation_id)
+  {
+    $count += p_ai_drain_tags_indexation($indexation_id, 20, $params['force'] ? null : $params['exec_id']);
+  }
+
   $pending_tickets = p_ai_get_pending_tickets();
   if (empty($pending_tickets))
   {
-    if (!$params['force']) pwg_unique_exec_ends('ai_check_tickets');
-    return array('processed' => $count);
+    return p_ai_check_tickets_next($params, $count);
   }
 
   $polled = p_ai_post('/tickets/poll', array('ticket_ids' => array_keys($pending_tickets)));
@@ -401,12 +450,18 @@ UPDATE '.P_AI_TICKETS_TABLE.'
     $count += count($ids);
   }
 
+  return p_ai_check_tickets_next($params, $count);
+}
+
+function p_ai_check_tickets_next($params, $count)
+{
   // continue only while a round actually resolves something; the cap is a safety bound
   $iteration = (int)$params['iteration'];
   $has_more = !$params['force']
     && $count > 0
     && $iteration < 20
     && (count(p_ai_get_pending_tickets()) > 0
+      || count(p_ai_get_pending_tags_indexations()) > 0
       || p_ai_has_pending_ticket('COALESCE(send_attempt_at, created_at) < NOW() - INTERVAL 10 MINUTE', 'unsent'));
 
   if ($has_more)

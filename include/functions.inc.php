@@ -306,6 +306,146 @@ SELECT id
   );
 }
 
+function p_ai_get_pending_tags_indexations()
+{
+  $query = '
+SELECT ticket_id
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE status = \'pending\'
+    AND type = \'embed_tags\'
+;';
+
+  return query2array($query, null, 'ticket_id');
+}
+
+// replayable: the same batch may come from the callback and from the poll
+function p_ai_save_tags_batch(array $batch)
+{
+  global $logger;
+
+  if ('completed' !== ($batch['status'] ?? null) || !p_ai_check_db_compatibility())
+  {
+    return 0;
+  }
+
+  $vec_fn = conf_get_param('piwigo_ai_vector_function');
+  $result = $batch['result'] ?? array();
+  $model = !empty($result['embedding_model']) && is_string($result['embedding_model'])
+    ? '\''.pwg_db_real_escape_string(substr($result['embedding_model'], 0, 255)).'\''
+    : 'NULL';
+
+  $saved = 0;
+  foreach ($result['tags'] ?? array() as $tag)
+  {
+    $vector = p_ai_valid_embedding($tag['embedding'] ?? null);
+    if (empty($tag['id']) || null === $vector)
+    {
+      $logger->warn('[p_ai_save_tags_batch] Invalid embedding ignored for tag '.(int)($tag['id'] ?? 0));
+      continue;
+    }
+
+    // lastmodified kept: an embedding is not a change of the tag
+    pwg_query('
+UPDATE `'.TAGS_TABLE.'`
+  SET `embedding` = '.$vec_fn.'(\''.pwg_db_real_escape_string(json_encode($vector)).'\'),
+    `embedding_model` = '.$model.',
+    `lastmodified` = `lastmodified`
+  WHERE id = '.(int)$tag['id'].'
+;');
+    $saved++;
+  }
+
+  return $saved;
+}
+
+function p_ai_close_tags_indexation($ticket_id, $status, $message = null, $cost = null)
+{
+  single_update(
+    P_AI_TICKETS_TABLE,
+    array(
+      'status'         => 'completed' === $status ? 'completed' : 'failed',
+      'failed_message' => null !== $message ? pwg_db_real_escape_string($message) : null,
+      'cost'           => null !== $cost ? (int)$cost : null,
+    ),
+    array('ticket_id' => pwg_db_real_escape_string($ticket_id))
+  );
+}
+
+// polls the indexation until nothing is ready or the time is up: saves and acknowledges each
+// batch, then closes the indexation once it is finished and every batch is delivered
+function p_ai_drain_tags_indexation($ticket_id, $seconds, $exec_id = null)
+{
+  global $logger;
+
+  $count = 0;
+  $started_at = time();
+
+  do
+  {
+    $polled = p_ai_post('/tickets/poll', array('ticket_ids' => array($ticket_id)), 60);
+    if (isset($polled['errors']) || !isset($polled['data']))
+    {
+      $logger->error('[PIWIGO_AI][TAGS INDEXATION] Unable to poll '.$ticket_id);
+      break;
+    }
+
+    $parent = $polled['data'][0] ?? null;
+    if (null === $parent)
+    {
+      p_ai_close_tags_indexation($ticket_id, 'failed', 'not found on AI server');
+      return $count + 1;
+    }
+
+    if (!empty($parent['expired_at']))
+    {
+      p_ai_close_tags_indexation($ticket_id, 'failed', 'result expired, never acknowledged');
+      return $count + 1;
+    }
+
+    $batches = $parent['batches'] ?? array();
+    if (empty($batches))
+    {
+      if (in_array($parent['status'], array('completed', 'failed'), true))
+      {
+        p_ai_close_tags_indexation($ticket_id, $parent['status'], $parent['error'] ?? null, $parent['cost'] ?? null);
+        p_ai_post('/tickets/ack', array('ticket_ids' => array($ticket_id)));
+        return $count + 1;
+      }
+      break;
+    }
+
+    $batch_ids = array();
+    foreach ($batches as $batch)
+    {
+      p_ai_save_tags_batch($batch);
+      $batch_ids[] = $batch['id'];
+    }
+    p_ai_post('/tickets/ack', array('ticket_ids' => $batch_ids));
+    $count += count($batch_ids);
+
+    if ($exec_id)
+    {
+      p_ai_refresh_check_lock($exec_id);
+    }
+  }
+  while (time() - $started_at < $seconds);
+
+  return $count;
+}
+
+function p_ai_is_tags_indexation($ticket_id, $status = null)
+{
+  $query = '
+SELECT id
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE ticket_id = \''.pwg_db_real_escape_string($ticket_id).'\'
+    AND type = \'embed_tags\'
+    '.(null !== $status ? 'AND status = \''.$status.'\'' : '').'
+;';
+
+  return pwg_db_num_rows(pwg_query($query)) > 0;
+}
+
 function p_ai_get(string $url, int $timeout = 10)
 {
   return p_ai_request('GET', $url, null, false, $timeout);
@@ -375,7 +515,7 @@ function p_ai_send_ticket($id, array $image_info, array $options)
   $callback = null;
   if ($is_accessible)
   {
-    $callback = $abs_root . 'ws.php?format=json&method=pwg.ai.analyze';
+    $callback = $abs_root . 'ws.php?format=json&method=pwg.ai.callback';
     $img = $abs_root . (new SrcImage($image_info))->rel_path; // https://my-piwigo.com/./upload/2026/05/06/202605xxxxxxxx-xxxxxxx.jpg
   }
   else
