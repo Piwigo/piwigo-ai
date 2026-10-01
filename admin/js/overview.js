@@ -48,16 +48,16 @@ function start_tags_indexation() {
     data: { pwg_token: p_ai_pwg_token },
     success: function(res) {
       if (res.stat === 'ok') {
-        $.jGrowl(res.result.message || p_ai_str_indexation_started, { theme: 'success', header: str_success, life: 4000, sticky: false });
         follow_tags_indexation();
+        pwgToaster({ text: res.result.message || p_ai_str_indexation_started, icon: 'success' });
         return;
       }
-      $.jGrowl(res.message, { theme: 'error', header: 'Oops !', sticky: true });
       refresh_tags_state();
+      pwgToaster({ text: res.message, icon: 'error' });
     },
-    error: function() {
-      $.jGrowl(p_ai_str_tags_indexation, { theme: 'error', header: 'Oops !', sticky: true });
+    error: function(e) {
       refresh_tags_state();
+      pwgToaster({ text: e.responseJSON?.message ?? e.statusText, icon: 'error' });
     }
   });
 }
@@ -171,18 +171,18 @@ function p_ai_check_compat(method) {
     success: function(res) {
       compat_is_send = false;
       if (res.stat === 'ok' && res.result) {
-        $.jGrowl( str_success_compatibility, { theme: 'success', header: str_success, life: 4000, sticky: false });
+        pwgToaster({ text: str_success_compatibility, icon: 'success' });
         $('#p_ai_check_compatibility').closest('ul').remove();
         if ($('.eiw .messages').children().length === 0) {
           $('.eiw .messages').remove();
         }
         return;   
       }
-      $.jGrowl( str_error_compatibility, { theme: 'error', header: 'Oops !', sticky: true });      
+      pwgToaster({ text: str_error_compatibility, icon: 'error' });      
     },
     error: function(e) {
       compat_is_send = false;
-      $.jGrowl( str_error_compatibility, { theme: 'error', header: 'Oops !', sticky: true });
+      pwgToaster({ text: str_error_compatibility, icon: 'error' });
     }
   })
 }

@@ -48,6 +48,40 @@ const PWG_TOKEN = "{$PWG_TOKEN}";
         value="{$P_AI_CONFIG.description_prefix|default:''|escape:html}"
       />
     </div>
+
+    <div class="mt-8">
+      <span class="p-1.25 rounded-full icon-tags icon-purple"></span>
+      <span class="font-bold text-sm p-1.25 dark:text-[#c1c1c1]">{'Tags'|translate}</span>
+    </div>
+
+    <div class="mt-4">
+      <p class="font-bold">{'Tags mode'|translate}</p>
+      <p class="text-xs">{'How the AI chooses the tags of each photo.'|translate}</p>
+      {assign var=p_ai_smart_available value=$P_AI_VECTOR_DISTANCE && $P_AI_TAGS_STATE.indexed > 0}
+      {assign var=p_ai_tags_mode value=$P_AI_CONFIG.tags_mode|default:'open'}
+      {if !$p_ai_smart_available}{assign var=p_ai_tags_mode value='open'}{/if}
+      <div class="flex flex-col gap-2 mt-2">
+        <div class="user-list-checkbox p-ai-tags-mode flex items-center gap-2 cursor-pointer" data-value="open"{if $p_ai_tags_mode == 'open'} data-selected="1"{/if}>
+          <span class="select-checkbox"></span>
+          <span class="user-list-checkbox-label"><span class="font-bold">{'Open'|translate}</span> <span class="text-xs">{'the AI creates its own tags.'|translate}</span></span>
+        </div>
+        <div class="user-list-checkbox p-ai-tags-mode flex items-center gap-2 cursor-pointer{if !$p_ai_smart_available} opacity-50 pointer-events-none{/if}" data-value="smart"{if $p_ai_tags_mode == 'smart'} data-selected="1"{/if}>
+          <span class="select-checkbox"></span>
+          <span class="user-list-checkbox-label"><span class="font-bold">{'Smart'|translate}</span> <span class="text-xs">{'the AI prefers the indexed tags of the gallery, and creates a tag only when it fits the photo better.'|translate}</span></span>
+        </div>
+        <div class="user-list-checkbox p-ai-tags-mode flex items-center gap-2 cursor-pointer{if !$p_ai_smart_available} opacity-50 pointer-events-none{/if}" data-value="closed"{if $p_ai_tags_mode == 'closed'} data-selected="1"{/if}>
+          <span class="select-checkbox"></span>
+          <span class="user-list-checkbox-label"><span class="font-bold">{'Closed'|translate}</span> <span class="text-xs">{'the AI only uses the indexed tags of the gallery, it never creates one.'|translate}</span></span>
+        </div>
+      </div>
+      {if !$P_AI_VECTOR_DISTANCE}
+      <p class="text-xs italic mt-2">{'Smart and closed tags need a database that can compare vectors (MariaDB 11.7+).'|translate}</p>
+      {elseif $P_AI_TAGS_STATE.indexed == 0}
+      <p class="text-xs italic mt-2">{'Index your tags first, from the overview: the smart and closed modes choose among the indexed tags.'|translate}</p>
+      {elseif $P_AI_TAGS_STATE.to_index > 0}
+      <p class="text-xs italic mt-2">{'%d of %d tags are indexed: the others cannot be chosen until they are indexed, from the overview.'|translate:$P_AI_TAGS_STATE.indexed:$P_AI_TAGS_STATE.total}</p>
+      {/if}
+    </div>
   </div>
 </div>
 <div class="savebar-footer justify-end!">

@@ -12,6 +12,7 @@ class piwigo_ai_maintain extends PluginMaintain
     'account_id' => null,
     'api_key' => null,
     'display_ai_description' => false,
+    'tags_mode' => 'open',
   );
 
   function __construct($plugin_id)
@@ -89,6 +90,7 @@ class piwigo_ai_maintain extends PluginMaintain
     conf_delete_param('piwigo_ai');
     conf_delete_param('piwigo_ai_db_compatibility');
     conf_delete_param('piwigo_ai_vector_function');
+    conf_delete_param('piwigo_ai_vector_distance');
     conf_delete_param('piwigo_ai_outdated');
     conf_delete_param('piwigo_ai_migrations');
   }

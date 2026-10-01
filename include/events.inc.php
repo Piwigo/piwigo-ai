@@ -20,6 +20,11 @@ function p_ai_loc_end_add_uploaded_file(array $image_info)
     'embedding' => (filter_var($_POST['embedding'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false)
       && p_ai_check_db_compatibility(),
   ];
+  // the smart and closed tags modes choose tags with the photo embedding
+  if ('open' !== p_ai_tags_mode())
+  {
+    $options['embedding'] = true;
+  }
 
   if (!$options['caption'] && !$options['tagging'] && !$options['ocr'] && !$options['embedding']) return;
 

@@ -28,6 +28,12 @@ $(function() {
     .insertAfter('#startUpload')
     .css('left', $('#startUpload').innerWidth() + 45);
 
+  const update_tags_warning = function() {
+    $('#p_ai_tags_warning').toggle(p_ai_upload.is(':checked') && p_ai_upload_tagging.is(':checked'));
+  };
+  update_tags_warning();
+  $('#togglePwgAiMode, #pAiUploadTagging').on('change', update_tags_warning);
+
   $('#togglePwgAiMode').on('change', function() {
     if ($(this).is(':checked')) {
       $('#p_ai_options_content').removeClass('hidden!');

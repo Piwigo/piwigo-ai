@@ -148,6 +148,7 @@ function p_ai_analyze($image, $callback, $options = [])
     'tagging' => ($options['tagging'] ?? true) ? '1' : '0',
     'ocr' => ($options['ocr'] ?? true) ? '1' : '0',
     'embedding' => (($options['embedding'] ?? true) && p_ai_check_db_compatibility()) ? '1' : '0',
+    'tag_embeddings' => (($options['tagging'] ?? true) && ($options['embedding'] ?? true) && p_ai_check_db_compatibility()) ? '1' : '0',
     'language' => get_default_language(),
   );
 
@@ -1038,6 +1039,60 @@ function p_ai_check_db_compatibility($force = false)
   }
 
   return $is_compatible;
+}
+
+// the smart and closed tags modes compare vectors: they need a distance function (MariaDB 11.7+, not MySQL Community)
+function p_ai_check_vector_distance($force = false)
+{
+  global $mysqli;
+
+  if (!p_ai_check_db_compatibility())
+  {
+    return false;
+  }
+
+  $has_distance = conf_get_param('piwigo_ai_vector_distance', null);
+  if (!is_null($has_distance) && !$force)
+  {
+    return $has_distance;
+  }
+
+  $vec_fn = conf_get_param('piwigo_ai_vector_function');
+  try
+  {
+    $result = $mysqli->query('SELECT VEC_DISTANCE_COSINE('.$vec_fn.'(\'[1]\'), '.$vec_fn.'(\'[1]\'));');
+  }
+  catch (Throwable $e)
+  {
+    $result = false;
+  }
+
+  $has_distance = false !== $result;
+  conf_update_param('piwigo_ai_vector_distance', $has_distance, true);
+
+  return $has_distance;
+}
+
+// the mode in use: open when the database cannot compare vectors
+function p_ai_tags_mode()
+{
+  global $conf;
+
+  $mode = $conf['piwigo_ai']['tags_mode'] ?? 'open';
+
+  return in_array($mode, array('smart', 'closed'), true) && p_ai_check_vector_distance() ? $mode : 'open';
+}
+
+// the tags the smart and closed modes cannot choose yet
+function p_ai_tags_not_indexed()
+{
+  if ('open' === p_ai_tags_mode())
+  {
+    return 0;
+  }
+  $state = p_ai_get_tags_indexation_state();
+
+  return $state['to_index'];
 }
 
 function p_ai_check_connection($default_conf)

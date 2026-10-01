@@ -57,6 +57,9 @@ function p_ai_add_methods($arr)
         'flags' => WS_PARAM_OPTIONAL,
         'type' => WS_TYPE_BOOL,
       ),
+      'tags_mode' => array(
+        'flags' => WS_PARAM_OPTIONAL,
+      ),
       'pwg_token' => array(),
     ),
     'Change Piwigo AI configuration',
@@ -313,6 +316,23 @@ function p_ws_ai_config($params)
   {
     $new_conf['display_ai_description'] = filter_var($params['display_ai_description'], FILTER_VALIDATE_BOOLEAN);
   }
+  if (isset($params['tags_mode']))
+  {
+    if (!in_array($params['tags_mode'], array('open', 'smart', 'closed'), true))
+    {
+      return new PwgError(WS_ERR_INVALID_PARAM, 'Invalid tags mode');
+    }
+    if ('open' !== $params['tags_mode'] && !p_ai_check_vector_distance())
+    {
+      return new PwgError(400, l10n('Smart and closed tags need a database that can compare vectors (MariaDB 11.7+).'));
+    }
+    $tags_state = p_ai_get_tags_indexation_state();
+    if ('open' !== $params['tags_mode'] && 0 === $tags_state['indexed'])
+    {
+      return new PwgError(400, l10n('Index your tags first, from the overview: the smart and closed modes choose among the indexed tags.'));
+    }
+    $new_conf['tags_mode'] = $params['tags_mode'];
+  }
   conf_update_param('piwigo_ai', array_merge($conf['piwigo_ai'], $new_conf), true);
   return 'Configuration saved';
 }
@@ -338,6 +358,7 @@ function p_ws_ai_check_compatibility($params)
   {
     include_once(P_AI_PATH . 'include/migrations.inc.php');
     p_ai_migrate_compatibility_db();
+    p_ai_check_vector_distance(true);
     return true;
   }
 

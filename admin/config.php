@@ -13,6 +13,9 @@ check_status(ACCESS_ADMINISTRATOR);
 
 global $template;
 
+$template->assign('P_AI_VECTOR_DISTANCE', p_ai_check_vector_distance());
+$template->assign('P_AI_TAGS_STATE', p_ai_get_tags_indexation_state());
+
 // +-----------------------------------------------------------------------+
 // | template init                                                         |
 // +-----------------------------------------------------------------------+

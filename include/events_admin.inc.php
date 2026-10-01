@@ -86,6 +86,8 @@ function p_ai_display_add_options()
   if ($display_formats) return;
 
   $template->assign('P_AI_EMBEDDING_ENABLED', p_ai_check_db_compatibility());
+  $template->assign('P_AI_EMBEDDING_REQUIRED', 'open' !== p_ai_tags_mode());
+  $template->assign('P_AI_TAGS_NOT_INDEXED', p_ai_tags_not_indexed());
   $template->set_filename('p_ai_picture_options', P_AI_PATH.'/admin/template/add_picture_options.tpl');
   $template->parse('p_ai_picture_options');
 }
@@ -109,7 +111,7 @@ function p_ai_element_set_global_action($action, $collection)
     'caption' => !empty($_POST['p_ai_caption']),
     'tagging' => !empty($_POST['p_ai_tagging']),
     'ocr'     => !empty($_POST['p_ai_ocr']),
-    'embedding' => !empty($_POST['p_ai_embedding']) && p_ai_check_db_compatibility(),
+    'embedding' => (!empty($_POST['p_ai_embedding']) && p_ai_check_db_compatibility()) || 'open' !== p_ai_tags_mode(),
   ];
 
   if (!$options['caption'] && !$options['tagging'] && !$options['ocr'] && !$options['embedding'])
@@ -162,6 +164,8 @@ function p_ai_element_set_global_add_action()
   global $template, $page;
   
   $template->assign('P_AI_EMBEDDING_ENABLED', p_ai_check_db_compatibility());
+  $template->assign('P_AI_EMBEDDING_REQUIRED', 'open' !== p_ai_tags_mode());
+  $template->assign('P_AI_TAGS_NOT_INDEXED', p_ai_tags_not_indexed());
   $template->set_filename('p_ai_analyze_options', realpath(P_AI_PATH.'/admin/template/batch_manager_global_options.tpl'));
 
   $template->append(

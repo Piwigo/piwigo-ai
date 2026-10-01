@@ -9,6 +9,11 @@ $(function() {
   toggle_description_prefix();
   $display_ai_description.on('change', toggle_description_prefix);
 
+  $('.p-ai-tags-mode').on('click', function() {
+    $('.p-ai-tags-mode').removeAttr('data-selected');
+    $(this).attr('data-selected', '1');
+  });
+
   $('#p_ai_save_settings').on('click', function() {
     if (p_ai_saving) return;
     p_ai_save();
@@ -33,6 +38,7 @@ function p_ai_save() {
   const is_accessible = $('#is_accessible').prop('checked');
   const display_ai_description = $('#display_ai_description').prop('checked');
   const description_prefix = $('#description_prefix').val();
+  const tags_mode = $('.p-ai-tags-mode[data-selected="1"]').data('value');
 
   $.ajax({
     url: 'ws.php?format=json&method=pwg.ai.config',
@@ -43,6 +49,7 @@ function p_ai_save() {
       description_prefix,
       is_accessible,
       display_ai_description,
+      tags_mode,
     },
     success: function(res) {
       if (res.stat === 'ok')
