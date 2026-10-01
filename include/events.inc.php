@@ -65,3 +65,61 @@ function p_ai_loc_end_picture()
 
   $template->assign('COMMENT_IMG', $ai_description);
 }
+
+/**
+ * `Piwigo AI` : ws_invoke_allowed, before a ws method runs
+ * no event follows a renaming: the tag is remembered here and compared in sendResponse
+ */
+function p_ai_ws_invoke_allowed_tags($res, $method_name, $params)
+{
+  global $p_ai_renamed_tag;
+
+  if ('pwg.tags.rename' !== $method_name || $res instanceof PwgError)
+  {
+    return $res;
+  }
+
+  $query = '
+SELECT id, name
+  FROM '.TAGS_TABLE.'
+  WHERE id = '.(int)$params['tag_id'].'
+;';
+  $tags = query2array($query);
+  $p_ai_renamed_tag = $tags[0] ?? null;
+
+  return $res;
+}
+
+/**
+ * `Piwigo AI` : sendResponse, after a ws method ran
+ */
+function p_ai_ws_send_response_tags($encoded_response)
+{
+  global $p_ai_renamed_tag;
+
+  if (empty($p_ai_renamed_tag))
+  {
+    return;
+  }
+
+  $tag_id = (int)$p_ai_renamed_tag['id'];
+  $old_name = $p_ai_renamed_tag['name'];
+  $p_ai_renamed_tag = null;
+
+  $query = '
+SELECT name
+  FROM '.TAGS_TABLE.'
+  WHERE id = '.$tag_id.'
+;';
+  list($name) = pwg_db_fetch_row(pwg_query($query));
+
+  if (null !== $name && $name !== $old_name)
+  {
+    pwg_query('
+UPDATE '.TAGS_TABLE.'
+  SET embedding = NULL,
+    embedding_model = NULL
+  WHERE id = '.$tag_id.'
+;');
+  }
+}

@@ -30,7 +30,7 @@ function render_tags_state(state) {
   if (state.in_progress) {
     label = p_ai_str_indexation_in_progress;
   } else if (state.to_index > 0) {
-    label = p_ai_str_index_tags.replace('%d', state.to_index);
+    label = state.to_index === 1 ? p_ai_str_index_one_tag : p_ai_str_index_tags.replace('%d', state.to_index);
     disabled = false;
   }
   $('#p-ai-btn-index-tags-label').text(label);

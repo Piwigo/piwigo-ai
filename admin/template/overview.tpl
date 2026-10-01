@@ -7,6 +7,7 @@ const p_ai_str_status_failed = "{'Failed'|translate|escape:javascript}";
 const p_ai_str_status_pending = "{'Pending'|translate|escape:javascript}";
 const p_ai_str_tags_indexation = "{'Tags indexation'|translate|escape:javascript}";
 const p_ai_str_index_tags = "{'Index %d tags'|translate|escape:javascript}";
+const p_ai_str_index_one_tag = "{'Index 1 tag'|translate|escape:javascript}";
 const p_ai_str_all_tags_indexed = "{'All tags are indexed'|translate|escape:javascript}";
 const p_ai_str_indexation_in_progress = "{'Indexation in progress…'|translate|escape:javascript}";
 const p_ai_str_indexation_started = "{'The tags indexation has started.'|translate|escape:javascript}";

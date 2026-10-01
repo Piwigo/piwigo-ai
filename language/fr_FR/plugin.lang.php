@@ -104,3 +104,4 @@ $lang['All tags are indexed'] = 'Tous les tags sont indexés';
 $lang['Indexation in progress…'] = 'Indexation en cours…';
 $lang['The tags indexation has started.'] = 'L\'indexation des tags a démarré.';
 $lang['The PHP post_max_size is below 8 MB: the tag embeddings will come by polling, more slowly.'] = 'Le post_max_size de PHP est inférieur à 8 Mo : les embeddings des tags arriveront par consultation périodique, plus lentement.';
+$lang['Index 1 tag'] = 'Indexer 1 tag';
