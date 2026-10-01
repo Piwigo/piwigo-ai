@@ -219,6 +219,51 @@ function p_ai_add_methods($arr)
 }
 
 /**
+ * `Piwigo AI` : the core methods returning whole rows of the tags or images tables also return
+ * the binary embedding column, which json_encode cannot encode: the answer comes out empty.
+ * Their result is stripped of it. Temporary, until the vectors leave the core tables.
+ */
+function p_ai_wrap_core_ws_methods($arr)
+{
+  $service = &$arr[0];
+
+  foreach (array('pwg.tags.getAdminList', 'pwg.tags.getList', 'pwg.images.getInfo', 'pwg.images.search') as $method_name)
+  {
+    if (!isset($service->_methods[$method_name]))
+    {
+      continue;
+    }
+
+    $callback = $service->_methods[$method_name]['callback'];
+    $service->_methods[$method_name]['callback'] = function ($params, &$service) use ($callback) {
+      return p_ai_strip_embeddings(call_user_func_array($callback, array($params, &$service)));
+    };
+  }
+}
+
+function p_ai_strip_embeddings($value)
+{
+  if ($value instanceof PwgNamedArray || $value instanceof PwgNamedStruct)
+  {
+    $value->_content = p_ai_strip_embeddings($value->_content);
+    return $value;
+  }
+
+  if (!is_array($value))
+  {
+    return $value;
+  }
+
+  unset($value['embedding']);
+  foreach ($value as $key => $item)
+  {
+    $value[$key] = p_ai_strip_embeddings($item);
+  }
+
+  return $value;
+}
+
+/**
  * `WS Piwigo AI` : Endpoint for server ai to callback the result
  */
 function p_ws_ai_callback($params)
