@@ -11,3 +11,5 @@ define('P_AI_ADMIN', get_root_url() . 'admin.php?page=plugin-' . P_AI_ID);
 define('P_AI_TICKETS_TABLE',   $prefixeTable . 'ai_tickets');
 define('P_AI_EMBEDDING_DIMENSION', 1152);
 define('P_AI_TAGS_PER_REQUEST', 20000);
+define('P_AI_MAX_TAGS', 5);
+define('P_AI_POLL_LIMIT', 100);

@@ -354,11 +354,8 @@ function p_ai_save_tags_batch(array $batch)
     return 0;
   }
 
-  $vec_fn = conf_get_param('piwigo_ai_vector_function');
   $result = $batch['result'] ?? array();
-  $model = !empty($result['embedding_model']) && is_string($result['embedding_model'])
-    ? '\''.pwg_db_real_escape_string(substr($result['embedding_model'], 0, 255)).'\''
-    : 'NULL';
+  $model = is_string($result['embedding_model'] ?? null) ? $result['embedding_model'] : null;
 
   $saved = 0;
   foreach ($result['tags'] ?? array() as $tag)
@@ -370,18 +367,203 @@ function p_ai_save_tags_batch(array $batch)
       continue;
     }
 
-    // lastmodified kept: an embedding is not a change of the tag
-    pwg_query('
-UPDATE `'.TAGS_TABLE.'`
-  SET `embedding` = '.$vec_fn.'(\''.pwg_db_real_escape_string(json_encode($vector)).'\'),
-    `embedding_model` = '.$model.',
-    `lastmodified` = `lastmodified`
-  WHERE id = '.(int)$tag['id'].'
-;');
+    p_ai_save_tag_vector((int)$tag['id'], $vector, $model);
     $saved++;
   }
 
   return $saved;
+}
+
+function p_ai_save_tag_vector($tag_id, array $vector, $model)
+{
+  $vec_fn = conf_get_param('piwigo_ai_vector_function');
+  $model_sql = null !== $model ? '\''.pwg_db_real_escape_string(substr($model, 0, 255)).'\'' : 'NULL';
+
+  // lastmodified kept: an embedding is not a change of the tag
+  pwg_query('
+UPDATE `'.TAGS_TABLE.'`
+  SET `embedding` = '.$vec_fn.'(\''.pwg_db_real_escape_string(json_encode($vector)).'\'),
+    `embedding_model` = '.$model_sql.',
+    `lastmodified` = `lastmodified`
+  WHERE id = '.(int)$tag_id.'
+;');
+}
+
+// the lookup of tag_id_from_tag_name() in the core, without creating the tag: same name,
+// same url name, or a name of a multilingual tag. $name is escaped, like the core expects it
+function p_ai_find_tag_id($name)
+{
+  $ids = query2array('
+SELECT id
+  FROM '.TAGS_TABLE.'
+  WHERE name = \''.$name.'\'
+;', null, 'id');
+
+  if (empty($ids))
+  {
+    $ids = query2array('
+SELECT id
+  FROM '.TAGS_TABLE.'
+  WHERE url_name = \''.trigger_change('render_tag_url', $name).'\'
+;', null, 'id');
+  }
+
+  if (empty($ids))
+  {
+    $sub_name_where = trigger_change('get_tag_name_like_where', array(), $name);
+    if (count($sub_name_where))
+    {
+      $ids = query2array('
+SELECT id
+  FROM '.TAGS_TABLE.'
+  WHERE '.implode(' OR ', $sub_name_where).'
+;', null, 'id');
+    }
+  }
+
+  return empty($ids) ? null : (int)$ids[0];
+}
+
+function p_ai_cosine(array $a, array $b)
+{
+  $dot = 0.0;
+  $norm_a = 0.0;
+  $norm_b = 0.0;
+  foreach ($a as $i => $x)
+  {
+    $y = $b[$i] ?? 0.0;
+    $dot += $x * $y;
+    $norm_a += $x * $x;
+    $norm_b += $y * $y;
+  }
+
+  return $norm_a > 0 && $norm_b > 0 ? $dot / sqrt($norm_a * $norm_b) : 0.0;
+}
+
+// the indexed tags of the same model closest to a vector: tag id => similarity (1 - cosine distance)
+function p_ai_nearest_tags(array $vector, $model, $limit)
+{
+  $vec_fn = conf_get_param('piwigo_ai_vector_function');
+
+  return query2array('
+SELECT id, 1 - VEC_DISTANCE_COSINE(embedding, '.$vec_fn.'(\''.pwg_db_real_escape_string(json_encode($vector)).'\')) AS score
+  FROM '.TAGS_TABLE.'
+  WHERE embedding IS NOT NULL
+    AND embedding_model = \''.pwg_db_real_escape_string($model).'\'
+  ORDER BY score DESC
+  LIMIT '.(int)$limit.'
+;', 'id', 'score');
+}
+
+// smart and closed modes: the tags of a photo chosen by their similarity with it, among the
+// indexed tags and the candidates of the AI, a candidate becoming the existing tag it names.
+// A candidate too close to a kept tag is not created: it would only repeat it ("formule un"
+// next to "formule 1"). $candidates: list of {name (escaped), vector|null}. Returns the existing
+// tag ids to associate and the candidates to create (smart mode only)
+function p_ai_choose_tags($mode, array $image_vector, $model, array $candidates)
+{
+  global $conf;
+
+  $min_score = (float)($conf['piwigo_ai_tags_min_score'] ?? 0.08);
+  $same_score = (float)($conf['piwigo_ai_tags_same_score'] ?? 0.95);
+  $redundant_score = (float)($conf['piwigo_ai_tags_redundant_score'] ?? 0.88);
+
+  $pool = array();
+  foreach (p_ai_nearest_tags($image_vector, $model, P_AI_MAX_TAGS) as $tag_id => $score)
+  {
+    $pool['id'.$tag_id] = array('tag_id' => (int)$tag_id, 'score' => (float)$score);
+  }
+
+  foreach ($candidates as $candidate)
+  {
+    $tag_id = p_ai_find_tag_id($candidate['name']);
+
+    if (null === $tag_id && null !== $candidate['vector'])
+    {
+      $nearest = p_ai_nearest_tags($candidate['vector'], $model, 1);
+      if (!empty($nearest) && (float)reset($nearest) >= $same_score)
+      {
+        $tag_id = (int)key($nearest);
+      }
+    }
+
+    $score = null !== $candidate['vector'] ? p_ai_cosine($candidate['vector'], $image_vector) : $min_score;
+
+    if (null !== $tag_id)
+    {
+      $key = 'id'.$tag_id;
+      $pool[$key] = array('tag_id' => $tag_id, 'score' => max($score, $pool[$key]['score'] ?? $score));
+    }
+    else if ('smart' === $mode && null !== $candidate['vector'])
+    {
+      $pool['new'.$candidate['name']] = array('candidate' => $candidate, 'score' => $score);
+    }
+  }
+
+  $pool = array_filter($pool, function ($entry) use ($min_score) {
+    return $entry['score'] >= $min_score;
+  });
+  uasort($pool, function ($a, $b) {
+    return $b['score'] <=> $a['score'];
+  });
+
+  $existing_ids = array();
+  foreach ($pool as $entry)
+  {
+    if (isset($entry['tag_id']))
+    {
+      $existing_ids[] = $entry['tag_id'];
+    }
+  }
+
+  $chosen = array('tag_ids' => array(), 'new_tags' => array());
+  foreach ($pool as $entry)
+  {
+    if (count($chosen['tag_ids']) + count($chosen['new_tags']) >= P_AI_MAX_TAGS)
+    {
+      break;
+    }
+
+    if (isset($entry['tag_id']))
+    {
+      $chosen['tag_ids'][] = $entry['tag_id'];
+      continue;
+    }
+
+    $vector = $entry['candidate']['vector'];
+    $is_redundant = p_ai_max_similarity($vector, $existing_ids, $model) >= $redundant_score;
+    foreach ($chosen['new_tags'] as $new_tag)
+    {
+      $is_redundant = $is_redundant || p_ai_cosine($vector, $new_tag['vector']) >= $redundant_score;
+    }
+
+    if (!$is_redundant)
+    {
+      $chosen['new_tags'][] = $entry['candidate'];
+    }
+  }
+
+  return $chosen;
+}
+
+// the highest similarity between a vector and the given indexed tags, 0 without any
+function p_ai_max_similarity(array $vector, array $tag_ids, $model)
+{
+  if (empty($tag_ids))
+  {
+    return 0.0;
+  }
+
+  $vec_fn = conf_get_param('piwigo_ai_vector_function');
+  list($max) = pwg_db_fetch_row(pwg_query('
+SELECT MAX(1 - VEC_DISTANCE_COSINE(embedding, '.$vec_fn.'(\''.pwg_db_real_escape_string(json_encode($vector)).'\')))
+  FROM '.TAGS_TABLE.'
+  WHERE id IN ('.implode(',', array_map('intval', $tag_ids)).')
+    AND embedding IS NOT NULL
+    AND embedding_model = \''.pwg_db_real_escape_string($model).'\'
+;'));
+
+  return (float)$max;
 }
 
 function p_ai_close_tags_indexation($ticket_id, $status, $message = null, $cost = null)
@@ -684,7 +866,7 @@ SELECT *
   FROM '.P_AI_TICKETS_TABLE.'
   WHERE status = \'pending\'
     AND type = \'analysis\'
-  LIMIT 500
+  LIMIT '.P_AI_POLL_LIMIT.'
 ;';
 
   return query2array($query, 'ticket_id');
@@ -807,7 +989,8 @@ SELECT id
   $tickets_failed = array();
   $embeddings = array();
   $tags_by_image = array();
-  $all_tag_names = array();
+  $image_vectors = array();
+  $embedding_models = array();
 
   foreach ($tickets as $data)
   {
@@ -883,6 +1066,7 @@ SELECT id
       }
       else
       {
+        $image_vectors[$image_id] = $vector;
         $embeddings[$image_id] = array(
           'vector' => pwg_db_real_escape_string(json_encode($vector)),
           'model' => !empty($result['embedding_model']) && is_string($result['embedding_model'])
@@ -892,22 +1076,31 @@ SELECT id
       }
     }
 
-    // tags (names pre-escaped: tag_id_from_tag_name expects escaped input)
-    if (!empty($result['tags']))
+    $embedding_models[$image_id] = is_string($result['embedding_model'] ?? null) ? $result['embedding_model'] : null;
+
+    // tags (names pre-escaped: tag_id_from_tag_name expects escaped input), each with its vector when sent
+    if (!empty($result['tags']) && is_array($result['tags']))
     {
-      $names = array();
-      foreach ($result['tags'] as $tag_candidate)
+      $tags = array_values($result['tags']);
+      $tag_vectors = is_array($result['tag_embeddings'] ?? null) && count($result['tag_embeddings']) === count($tags)
+        ? array_values($result['tag_embeddings'])
+        : array();
+
+      $candidates = array();
+      foreach ($tags as $i => $tag_candidate)
       {
-        $name = pwg_db_real_escape_string(strip_tags(trim($tag_candidate)));
+        $name = pwg_db_real_escape_string(strip_tags(trim((string)$tag_candidate)));
         if ($name !== '')
         {
-          $names[] = $name;
-          $all_tag_names[$name] = true;
+          $candidates[] = array(
+            'name' => $name,
+            'vector' => $is_compatible && isset($tag_vectors[$i]) ? p_ai_valid_embedding($tag_vectors[$i]) : null,
+          );
         }
       }
-      if (!empty($names))
+      if (!empty($candidates))
       {
-        $tags_by_image[$image_id] = $names;
+        $tags_by_image[$image_id] = $candidates;
       }
     }
 
@@ -941,35 +1134,64 @@ UPDATE `'.IMAGES_TABLE.'`
 ;');
   }
 
-  // tags: resolve every name once, associate per image, flag them all at once
+  // tags: chosen by the tags mode; only the tags created here are flagged as created by the AI,
+  // and saved with their vector so they are indexed at once
   if (!empty($tags_by_image))
   {
-    $names = array_keys($all_tag_names);
-    $name_to_id = array_combine($names, get_tag_ids($names));
+    $mode = p_ai_tags_mode();
+    $created = array();
 
-    $flag_ids = array();
-    foreach ($tags_by_image as $image_id => $img_names)
+    foreach ($tags_by_image as $image_id => $candidates)
     {
-      $img_tag_ids = array();
-      foreach ($img_names as $n)
+      $image_vector = $image_vectors[$image_id] ?? null;
+      $model = $embedding_models[$image_id] ?? null;
+
+      if ('open' !== $mode && null !== $image_vector && null !== $model)
       {
-        if (isset($name_to_id[$n]))
-        {
-          $img_tag_ids[] = $name_to_id[$n];
-          $flag_ids[$name_to_id[$n]] = true;
-        }
+        $chosen = p_ai_choose_tags($mode, $image_vector, $model, $candidates);
       }
+      else if ('closed' === $mode)
+      {
+        continue;
+      }
+      else
+      {
+        $chosen = array('tag_ids' => array(), 'new_tags' => $candidates);
+      }
+
+      $img_tag_ids = $chosen['tag_ids'];
+      foreach ($chosen['new_tags'] as $candidate)
+      {
+        $tag_id = p_ai_find_tag_id($candidate['name']);
+        if (null === $tag_id)
+        {
+          $tag_id = (int)tag_id_from_tag_name($candidate['name']);
+          $created[$tag_id] = array('vector' => $candidate['vector'], 'model' => $model);
+        }
+        $img_tag_ids[] = $tag_id;
+      }
+
+      $img_tag_ids = array_values(array_unique(array_filter($img_tag_ids)));
       if (!empty($img_tag_ids))
       {
         add_tags($img_tag_ids, array($image_id));
       }
     }
-    if (!empty($flag_ids))
+
+    foreach ($created as $tag_id => $tag)
+    {
+      if ($is_compatible && null !== $tag['vector'] && null !== $tag['model'])
+      {
+        p_ai_save_tag_vector($tag_id, $tag['vector'], $tag['model']);
+      }
+    }
+
+    if (!empty($created))
     {
       pwg_query('
 UPDATE `'.TAGS_TABLE.'`
   SET `ai` = \'true\'
-  WHERE id IN ('.implode(',', array_keys($flag_ids)).')
+  WHERE id IN ('.implode(',', array_keys($created)).')
 ;');
     }
   }
