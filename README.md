@@ -14,10 +14,9 @@ Transform your Piwigo gallery into an AI-powered smart platform!
 
 ## Prerequisites
 - **PHP**: 8.4 minimum
-- **Database**: the plugin works on any database Piwigo supports. The vector features (photo embedding, tags indexation, smart and closed tags modes) depend on it:
-  - **MariaDB 11.7+** (11.8 recommended): every feature.
-  - **MySQL 9.0+**: vectors are stored and tags can be indexed, but the smart and closed tags modes are unavailable (no vector distance function in the Community edition).
-  - **Older versions**: degraded mode, with descriptions, tags (open mode) and OCR only. The overview page tells when the database is not compatible, and can check it again.
+- **Database**: MariaDB 11.8 or newer. The plugin stores vectors and compares them in the database (photo embedding, tags indexation, smart and closed tags modes).
+  - On any other database (MySQL, an older MariaDB), the plugin does not install and does not activate, and it says why.
+  - A gallery that updates the plugin on such a database sees the same message in the administration. Once the database is updated, deactivate and reactivate the plugin.
 - **Public galleries** (the AI server sends results back): PHP `post_max_size` of at least 8 MB, for the batches of tag embeddings. Below, they come by polling, more slowly.
 
 ## Installation

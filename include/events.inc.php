@@ -17,8 +17,7 @@ function p_ai_loc_end_add_uploaded_file(array $image_info)
     'caption' => filter_var($_POST['caption'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
     'tagging' => filter_var($_POST['tagging'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
     'ocr' => filter_var($_POST['ocr'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
-    'embedding' => (filter_var($_POST['embedding'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false)
-      && p_ai_check_db_compatibility(),
+    'embedding' => filter_var($_POST['embedding'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
   ];
   // the smart and closed tags modes choose tags with the photo embedding
   if ('open' !== p_ai_tags_mode())
@@ -121,10 +120,43 @@ SELECT name
   if (null !== $name && $name !== $old_name)
   {
     pwg_query('
-UPDATE '.TAGS_TABLE.'
-  SET embedding = NULL,
-    embedding_model = NULL
-  WHERE id = '.$tag_id.'
+DELETE
+  FROM '.P_AI_TAG_VECTORS_TABLE.'
+  WHERE tag_id = '.$tag_id.'
 ;');
   }
+}
+
+/**
+ * `Piwigo AI` : delete_tags, which the core also fires when it merges tags or removes the orphan ones
+ */
+function p_ai_delete_tags($tag_ids)
+{
+  if (empty($tag_ids))
+  {
+    return;
+  }
+
+  pwg_query('
+DELETE
+  FROM '.P_AI_TAG_VECTORS_TABLE.'
+  WHERE tag_id IN ('.implode(',', array_map('intval', $tag_ids)).')
+;');
+}
+
+/**
+ * `Piwigo AI` : delete_elements, the photos removed from the gallery
+ */
+function p_ai_delete_elements($image_ids)
+{
+  if (empty($image_ids))
+  {
+    return;
+  }
+
+  pwg_query('
+DELETE
+  FROM '.P_AI_IMAGE_VECTORS_TABLE.'
+  WHERE image_id IN ('.implode(',', array_map('intval', $image_ids)).')
+;');
 }

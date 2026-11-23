@@ -2,8 +2,6 @@
 
 $lang['PiwigoAI'] = 'Piwigo AI';
 $lang['Overview'] = 'Vue d\'ensemble';
-$lang['Compatibility check successful, changes have been applied.'] = 'La vérification et les changements ont bien été effectués.';
-$lang['The database is still not compatible with the required prerequisites.'] = 'La base de données n\'est toujours pas compatible avec les prérequis.';
 $lang['AI description'] = 'Description IA';
 $lang['Show text contained in the image'] = 'Afficher le texte contenu dans l\'image';
 $lang['Hide text contained in the image'] = 'Masquer le texte contenu dans l\'image';
@@ -51,10 +49,10 @@ $lang['%d photo sent to Piwigo AI'] = '%d photo envoyée à Piwigo AI';
 $lang['%d photos sent to Piwigo AI'] = '%d photos envoyées à Piwigo AI';
 $lang['No ticket ID in Piwigo AI response'] = 'Aucun ticket ID dans la réponse de Piwigo AI';
 $lang['An error occurred with the Piwigo AI server'] = 'Une erreur est survenue avec le serveur Piwigo AI';
-$lang['<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.7+ or MySQL 9+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>'] = '<div>Piwigo AI fonctionne en mode dégradé car votre version de base de données (%s) est inférieure à la version requise (MariaDB 11.7+ ou MySQL 9+). Certaines fonctionnalités ne sont pas disponibles. <a id="p_ai_check_compatibility" href="#">Revérifier la compatibilité</a></div>';
 $lang['Image file not found'] = 'Fichier image introuvable';
 $lang['Piwigo AI is outdated, please update the plugin. (If you have updated the plugin but the message persists, deactivate and reactivate the plugin.)'] = 'Piwigo AI est obsolète, veuillez mettre à jour le plugin. (Si vous avez déjà mis à jour le plugin mais que le message persiste, désactivez puis réactivez le plugin.)';
 $lang['Unable to connect to the Piwigo AI server'] = 'Impossible de se connecter au serveur Piwigo AI';
+$lang['Piwigo AI needs a database that can compare vectors: MariaDB 11.8 or newer. Yours is %s. Update your database, then deactivate and reactivate the plugin.'] = 'Piwigo AI a besoin d\'une base de données capable de comparer des vecteurs : MariaDB 11.8 ou plus. La vôtre est %s. Mettez votre base à jour, puis désactivez et réactivez le plugin.';
 $lang['No pending tickets at the moment'] = 'Aucun ticket en attente pour le moment';
 $lang['No failed tickets'] = 'Aucun ticket échoué';
 $lang['Purge failed'] = 'Purger les tickets échoués';
@@ -92,7 +90,6 @@ $lang['Piwigo AI: %s was not analyzed: %s'] = 'Piwigo AI : %s n\'a pas été ana
 $lang['Piwigo AI: %d photos were not analyzed: %s'] = 'Piwigo AI : %d photos n\'ont pas été analysées : %s';
 $lang['Embedding'] = 'Embedding';
 $lang['Tags indexation'] = 'Indexation des tags';
-$lang['Your database cannot store embeddings: tags cannot be indexed.'] = 'Votre base de données ne peut pas stocker d\'embeddings : les tags ne peuvent pas être indexés.';
 $lang['%d of %d tags were sent: %s'] = '%d tags sur %d ont été envoyés : %s';
 $lang['A tags indexation is already in progress.'] = 'Une indexation des tags est déjà en cours.';
 $lang['A tags indexation was already in progress, it is followed now.'] = 'Une indexation des tags était déjà en cours, elle est maintenant suivie.';
@@ -104,7 +101,6 @@ $lang['Indexation in progress…'] = 'Indexation en cours…';
 $lang['The tags indexation has started.'] = 'L\'indexation des tags a démarré.';
 $lang['The PHP post_max_size is below 8 MB: the tag embeddings will come by polling, more slowly.'] = 'Le post_max_size de PHP est inférieur à 8 Mo : les embeddings des tags arriveront par consultation périodique, plus lentement.';
 $lang['Index 1 tag'] = 'Indexer 1 tag';
-$lang['Smart and closed tags need a database that can compare vectors (MariaDB 11.7+).'] = 'Les modes intelligent et fermé nécessitent une base de données capable de comparer des vecteurs (MariaDB 11.7+).';
 $lang['Required by the smart and closed tags modes, which choose tags with the photo embedding'] = 'Requis par les modes de tags intelligent et fermé, qui choisissent les tags avec l\'embedding de la photo';
 $lang['Tags mode'] = 'Mode des tags';
 $lang['How the AI chooses the tags of each photo.'] = 'Comment l\'IA choisit les tags de chaque photo.';

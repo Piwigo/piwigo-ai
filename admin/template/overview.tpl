@@ -13,8 +13,6 @@ const p_ai_str_indexation_in_progress = "{'Indexation in progress…'|translate|
 const p_ai_str_indexation_started = "{'The tags indexation has started.'|translate|escape:javascript}";
 let p_ai_tags_state = {$P_AI_TAGS_STATE};
 const str_success = "{'Success'|translate|escape:javascript}"
-const str_success_compatibility = "{'Compatibility check successful, changes have been applied.'|translate|escape:javascript}"
-const str_error_compatibility = "{'The database is still not compatible with the required prerequisites.'|translate|escape:javascript}"
 {/footer_script}
 
 <div class="titlePage">
@@ -67,7 +65,6 @@ const str_error_compatibility = "{'The database is still not compatible with the
       <div class="grid grid-cols-[2fr_1fr] gap-3">
 
         {* Tags indexation *}
-        {if $P_AI_COMPATIBLE}
         <div id="p-ai-indexation" class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4">
           <h3 class="font-bold text-sm text-gray-400 dark:text-[#9e9e9e] mb-4">{'Tags indexation'|translate} <span class="icon-help-circled tiptip cursor-help" title="{'The indexation computes an embedding of each tag, so that Piwigo AI can then choose your own tags for your photos.'|translate}"></span></h3>
 
@@ -89,12 +86,6 @@ const str_error_compatibility = "{'The database is still not compatible with the
           <p class="text-[10px] text-gray-400 mt-2"><i class="icon-attention"></i> {'The PHP post_max_size is below 8 MB: the tag embeddings will come by polling, more slowly.'|translate}</p>
           {/if}
         </div>
-        {else}
-        <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4">
-          <h3 class="font-bold text-sm text-gray-400 dark:text-[#9e9e9e] mb-4">{'Tags indexation'|translate}</h3>
-          <p class="text-xs text-gray-400">{'Your database cannot store embeddings: tags cannot be indexed.'|translate}</p>
-        </div>
-        {/if}
 
         {* Session usage *}
         <div class="bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4">

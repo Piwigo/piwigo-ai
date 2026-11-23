@@ -147,8 +147,8 @@ function p_ai_analyze($image, $callback, $options = [])
     'caption' => ($options['caption'] ?? true) ? '1' : '0',
     'tagging' => ($options['tagging'] ?? true) ? '1' : '0',
     'ocr' => ($options['ocr'] ?? true) ? '1' : '0',
-    'embedding' => (($options['embedding'] ?? true) && p_ai_check_db_compatibility()) ? '1' : '0',
-    'tag_embeddings' => (($options['tagging'] ?? true) && ($options['embedding'] ?? true) && p_ai_check_db_compatibility()) ? '1' : '0',
+    'embedding' => ($options['embedding'] ?? true) ? '1' : '0',
+    'tag_embeddings' => (($options['tagging'] ?? true) && ($options['embedding'] ?? true)) ? '1' : '0',
     'language' => get_default_language(),
   );
 
@@ -180,16 +180,12 @@ function p_ai_index_tags()
 {
   global $conf, $logger;
 
-  if (!p_ai_check_db_compatibility())
-  {
-    return array('errors' => l10n('Your database cannot store embeddings: tags cannot be indexed.'), 'code' => 400);
-  }
-
   $query = '
-SELECT id, name, url_name
-  FROM '.TAGS_TABLE.'
-  WHERE embedding IS NULL
-  ORDER BY id
+SELECT t.id, t.name, t.url_name
+  FROM '.TAGS_TABLE.' AS t
+    LEFT JOIN '.P_AI_TAG_VECTORS_TABLE.' AS v ON v.tag_id = t.id
+  WHERE v.tag_id IS NULL
+  ORDER BY t.id
 ;';
   $tags = array();
   foreach (query2array($query) as $row)
@@ -310,8 +306,9 @@ SELECT id
 function p_ai_get_tags_indexation_state()
 {
   list($total, $indexed) = pwg_db_fetch_row(pwg_query('
-SELECT COUNT(*), COUNT(embedding)
-  FROM '.TAGS_TABLE.'
+SELECT COUNT(*), COUNT(v.tag_id)
+  FROM '.TAGS_TABLE.' AS t
+    LEFT JOIN '.P_AI_TAG_VECTORS_TABLE.' AS v ON v.tag_id = t.id
 ;'));
 
   $last = pwg_db_fetch_assoc(pwg_query('
@@ -349,7 +346,7 @@ function p_ai_save_tags_batch(array $batch)
 {
   global $logger;
 
-  if ('completed' !== ($batch['status'] ?? null) || !p_ai_check_db_compatibility())
+  if ('completed' !== ($batch['status'] ?? null))
   {
     return 0;
   }
@@ -376,16 +373,14 @@ function p_ai_save_tags_batch(array $batch)
 
 function p_ai_save_tag_vector($tag_id, array $vector, $model)
 {
-  $vec_fn = conf_get_param('piwigo_ai_vector_function');
   $model_sql = null !== $model ? '\''.pwg_db_real_escape_string(substr($model, 0, 255)).'\'' : 'NULL';
 
-  // lastmodified kept: an embedding is not a change of the tag
+  // the id is read from the tags table: a tag deleted in the meantime gets no row
   pwg_query('
-UPDATE `'.TAGS_TABLE.'`
-  SET `embedding` = '.$vec_fn.'(\''.pwg_db_real_escape_string(json_encode($vector)).'\'),
-    `embedding_model` = '.$model_sql.',
-    `lastmodified` = `lastmodified`
-  WHERE id = '.(int)$tag_id.'
+REPLACE INTO `'.P_AI_TAG_VECTORS_TABLE.'` (`tag_id`, `embedding`, `embedding_model`)
+  SELECT id, VEC_FromText(\''.pwg_db_real_escape_string(json_encode($vector)).'\'), '.$model_sql.'
+    FROM `'.TAGS_TABLE.'`
+    WHERE id = '.(int)$tag_id.'
 ;');
 }
 
@@ -443,16 +438,13 @@ function p_ai_cosine(array $a, array $b)
 // the indexed tags of the same model closest to a vector: tag id => similarity (1 - cosine distance)
 function p_ai_nearest_tags(array $vector, $model, $limit)
 {
-  $vec_fn = conf_get_param('piwigo_ai_vector_function');
-
   return query2array('
-SELECT id, 1 - VEC_DISTANCE_COSINE(embedding, '.$vec_fn.'(\''.pwg_db_real_escape_string(json_encode($vector)).'\')) AS score
-  FROM '.TAGS_TABLE.'
-  WHERE embedding IS NOT NULL
-    AND embedding_model = \''.pwg_db_real_escape_string($model).'\'
+SELECT tag_id, 1 - VEC_DISTANCE_COSINE(embedding, VEC_FromText(\''.pwg_db_real_escape_string(json_encode($vector)).'\')) AS score
+  FROM '.P_AI_TAG_VECTORS_TABLE.'
+  WHERE embedding_model = \''.pwg_db_real_escape_string($model).'\'
   ORDER BY score DESC
   LIMIT '.(int)$limit.'
-;', 'id', 'score');
+;', 'tag_id', 'score');
 }
 
 // smart and closed modes: the tags of a photo chosen by their similarity with it, among the
@@ -554,12 +546,10 @@ function p_ai_max_similarity(array $vector, array $tag_ids, $model)
     return 0.0;
   }
 
-  $vec_fn = conf_get_param('piwigo_ai_vector_function');
   list($max) = pwg_db_fetch_row(pwg_query('
-SELECT MAX(1 - VEC_DISTANCE_COSINE(embedding, '.$vec_fn.'(\''.pwg_db_real_escape_string(json_encode($vector)).'\')))
-  FROM '.TAGS_TABLE.'
-  WHERE id IN ('.implode(',', array_map('intval', $tag_ids)).')
-    AND embedding IS NOT NULL
+SELECT MAX(1 - VEC_DISTANCE_COSINE(embedding, VEC_FromText(\''.pwg_db_real_escape_string(json_encode($vector)).'\')))
+  FROM '.P_AI_TAG_VECTORS_TABLE.'
+  WHERE tag_id IN ('.implode(',', array_map('intval', $tag_ids)).')
     AND embedding_model = \''.pwg_db_real_escape_string($model).'\'
 ;'));
 
@@ -962,9 +952,6 @@ SELECT *
 ;', 'ticket_id');
   }
 
-  $is_compatible = p_ai_check_db_compatibility();
-  $vec_fn = conf_get_param('piwigo_ai_vector_function');
-
   // which target images still exist? (one query, for the completed tickets)
   $image_ids = array();
   foreach ($tickets as $data)
@@ -1056,7 +1043,7 @@ SELECT id
     );
 
     // embedding (per-row: needs a SQL function, unfit for mass_updates)
-    if ($is_compatible && !empty($result['embedding']))
+    if (!empty($result['embedding']))
     {
       $vector = p_ai_valid_embedding($result['embedding']);
       if (null === $vector)
@@ -1094,7 +1081,7 @@ SELECT id
         {
           $candidates[] = array(
             'name' => $name,
-            'vector' => $is_compatible && isset($tag_vectors[$i]) ? p_ai_valid_embedding($tag_vectors[$i]) : null,
+            'vector' => isset($tag_vectors[$i]) ?p_ai_valid_embedding($tag_vectors[$i]) : null,
           );
         }
       }
@@ -1126,11 +1113,12 @@ SELECT id
 
   foreach ($embeddings as $image_id => $embedding)
   {
+    // the id is read from the images table: a photo deleted in the meantime gets no row
     pwg_query('
-UPDATE `'.IMAGES_TABLE.'`
-  SET `embedding` = '.$vec_fn.'(\''.$embedding['vector'].'\'),
-    `embedding_model` = '.$embedding['model'].'
-  WHERE id = '.$image_id.'
+REPLACE INTO `'.P_AI_IMAGE_VECTORS_TABLE.'` (`image_id`, `embedding`, `embedding_model`)
+  SELECT id, VEC_FromText(\''.$embedding['vector'].'\'), '.$embedding['model'].'
+    FROM `'.IMAGES_TABLE.'`
+    WHERE id = '.(int)$image_id.'
 ;');
   }
 
@@ -1180,7 +1168,7 @@ UPDATE `'.IMAGES_TABLE.'`
 
     foreach ($created as $tag_id => $tag)
     {
-      if ($is_compatible && null !== $tag['vector'] && null !== $tag['model'])
+      if (null !== $tag['vector'] && null !== $tag['model'])
       {
         p_ai_save_tag_vector($tag_id, $tag['vector'], $tag['model']);
       }
@@ -1216,93 +1204,53 @@ UPDATE `'.TAGS_TABLE.'`
   return $results;
 }
 
+// the plugin only runs on a database that compares vectors (MariaDB 11.7+): one query tells,
+// and its answer is kept in the conf
 function p_ai_check_db_compatibility($force = false)
 {
   global $mysqli;
 
   $is_compatible = conf_get_param('piwigo_ai_db_compatibility', null);
-
-  // a compatible gallery checked before the vector function was stored is checked again once
-  if (!is_null($is_compatible) && !$force
-    && (!$is_compatible || !empty(conf_get_param('piwigo_ai_vector_function'))))
+  if (!is_null($is_compatible) && !$force)
   {
     return $is_compatible;
   }
 
   // tested on $mysqli directly: on the expected failure, pwg_query would stop the script (PHP < 8.1)
-  $vector_function = null;
-  foreach (array('VEC_FromText', 'STRING_TO_VECTOR') as $function)
-  {
-    try
-    {
-      $result = $mysqli->query('SELECT '.$function.'(\'[1]\');');
-    }
-    catch (Throwable $e)
-    {
-      $result = false;
-    }
-
-    if (false !== $result)
-    {
-      $vector_function = $function;
-      break;
-    }
-  }
-
-  $is_compatible = null !== $vector_function;
-  conf_update_param('piwigo_ai_db_compatibility', $is_compatible, true);
-  if ($is_compatible)
-  {
-    conf_update_param('piwigo_ai_vector_function', $vector_function, true);
-  }
-  else
-  {
-    conf_delete_param('piwigo_ai_vector_function');
-  }
-
-  return $is_compatible;
-}
-
-// the smart and closed tags modes compare vectors: they need a distance function (MariaDB 11.7+, not MySQL Community)
-function p_ai_check_vector_distance($force = false)
-{
-  global $mysqli;
-
-  if (!p_ai_check_db_compatibility())
-  {
-    return false;
-  }
-
-  $has_distance = conf_get_param('piwigo_ai_vector_distance', null);
-  if (!is_null($has_distance) && !$force)
-  {
-    return $has_distance;
-  }
-
-  $vec_fn = conf_get_param('piwigo_ai_vector_function');
   try
   {
-    $result = $mysqli->query('SELECT VEC_DISTANCE_COSINE('.$vec_fn.'(\'[1]\'), '.$vec_fn.'(\'[1]\'));');
+    $result = $mysqli->query('SELECT VEC_DISTANCE_COSINE(VEC_FromText(\'[1]\'), VEC_FromText(\'[1]\'));');
   }
   catch (Throwable $e)
   {
     $result = false;
   }
 
-  $has_distance = false !== $result;
-  conf_update_param('piwigo_ai_vector_distance', $has_distance, true);
+  $is_compatible = false !== $result;
+  conf_update_param('piwigo_ai_db_compatibility', $is_compatible, true);
 
-  return $has_distance;
+  return $is_compatible;
 }
 
-// the mode in use: open when the database cannot compare vectors
+// what the admin reads when the database is refused
+function p_ai_db_refused_message()
+{
+  load_language('plugin.lang', P_AI_PATH);
+
+  return l10n(
+    'Piwigo AI needs a database that can compare vectors: MariaDB 11.8 or newer. Yours is %s. Update your database, then deactivate and reactivate the plugin.',
+    htmlspecialchars(pwg_get_db_version())
+  );
+}
+
+// the mode in use: open unless the conf says smart or closed
 function p_ai_tags_mode()
 {
   global $conf;
 
   $mode = $conf['piwigo_ai']['tags_mode'] ?? 'open';
 
-  return in_array($mode, array('smart', 'closed'), true) && p_ai_check_vector_distance() ? $mode : 'open';
+  return in_array($mode, array('smart', 'closed'), true) ? $mode : 'open';
 }
 
 // the tags the smart and closed modes cannot choose yet

@@ -33,6 +33,27 @@ include_once(dirname(__FILE__) . '/include/constants.inc.php');
 // +-----------------------------------------------------------------------+
 
 include_once(P_AI_PATH . 'include/functions.inc.php');
+
+if (!p_ai_check_db_compatibility())
+{
+  if (defined('IN_ADMIN'))
+  {
+    add_event_handler('init', 'p_ai_db_refused');
+    function p_ai_db_refused()
+    {
+      global $page;
+      $page['errors'][] = p_ai_db_refused_message();
+    }
+  }
+  return;
+}
+
+// before the stops below: a tag or a photo deleted while the account is invalid or the plugin
+// outdated must not leave its vector behind
+$events_functions = P_AI_PATH.'include/events.inc.php';
+add_event_handler('delete_tags', 'p_ai_delete_tags', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_functions);
+add_event_handler('delete_elements', 'p_ai_delete_elements', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_functions);
+
 $is_valid_account = p_ai_check_account();
 if (!$is_valid_account)
 {
@@ -68,11 +89,8 @@ if ($is_plugin_outdated)
 add_event_handler('init', 'p_ai_init');
 
 $ws_functions = P_AI_PATH.'include/ws_functions.inc.php';
-$events_functions = P_AI_PATH.'include/events.inc.php';
 
 add_event_handler('ws_add_methods', 'p_ai_add_methods', EVENT_HANDLER_PRIORITY_NEUTRAL, $ws_functions);
-// after the core, which adds its methods at the neutral priority
-add_event_handler('ws_add_methods', 'p_ai_wrap_core_ws_methods', EVENT_HANDLER_PRIORITY_NEUTRAL + 10, $ws_functions);
 add_event_handler('loc_end_add_uploaded_file', 'p_ai_loc_end_add_uploaded_file', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_functions);
 add_event_handler('loc_end_picture', 'p_ai_loc_end_picture', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_functions);
 add_event_handler('ws_invoke_allowed', 'p_ai_ws_invoke_allowed_tags', EVENT_HANDLER_PRIORITY_NEUTRAL, $events_functions);

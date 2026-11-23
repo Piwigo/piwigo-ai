@@ -1,11 +1,4 @@
-let compat_is_send = false;
-
 $(function() {
-  $('#p_ai_check_compatibility').on('click', function(e) {
-    e.preventDefault();
-    p_ai_check_compat();
-  });
-
   load_recent_tickets();
 
   if ($('#p-ai-indexation').length) {
@@ -156,33 +149,4 @@ function render_recent_row(ticket, is_last) {
     + '<span class="text-xs text-gray-400 px-3 shrink-0"><i class="icon-ai-token"></i> ' + (ticket.cost || '—') + '</span>'
     + status_html
     + '</div>';
-}
-
-function p_ai_check_compat(method) {
-  if (compat_is_send) return;
-  compat_is_send = true;
-  $.ajax({
-    url: 'ws.php?format=json&method=pwg.ai.check_compatibility',
-    type: "POST",
-    dataType: 'json',
-    data: {
-      pwg_token: p_ai_pwg_token,
-    },
-    success: function(res) {
-      compat_is_send = false;
-      if (res.stat === 'ok' && res.result) {
-        pwgToaster({ text: str_success_compatibility, icon: 'success' });
-        $('#p_ai_check_compatibility').closest('ul').remove();
-        if ($('.eiw .messages').children().length === 0) {
-          $('.eiw .messages').remove();
-        }
-        return;   
-      }
-      pwgToaster({ text: str_error_compatibility, icon: 'error' });      
-    },
-    error: function(e) {
-      compat_is_send = false;
-      pwgToaster({ text: str_error_compatibility, icon: 'error' });
-    }
-  })
 }

@@ -2,8 +2,6 @@
 
 $lang['PiwigoAI'] = 'Piwigo AI';
 $lang['Overview'] = 'Overview';
-$lang['Compatibility check successful, changes have been applied.'] = 'Compatibility check successful, changes have been applied.';
-$lang['The database is still not compatible with the required prerequisites.'] = 'The database is still not compatible with the required prerequisites.';
 $lang['AI description'] = 'AI description';
 $lang['Show text contained in the image'] = 'Show text contained in the image';
 $lang['Hide text contained in the image'] = 'Hide text contained in the image';
@@ -51,10 +49,10 @@ $lang['%d photo sent to Piwigo AI'] = '%d photo sent to Piwigo AI';
 $lang['%d photos sent to Piwigo AI'] = '%d photos sent to Piwigo AI';
 $lang['No ticket ID in Piwigo AI response'] = 'No ticket ID in Piwigo AI response';
 $lang['An error occurred with the Piwigo AI server'] = 'An error occurred with the Piwigo AI server';
-$lang['<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.7+ or MySQL 9+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>'] = '<div>You are running in degraded mode because your database version (%s) is below the required version (MariaDB 11.7+ or MySQL 9+). Some Piwigo AI features are not available. <a id="p_ai_check_compatibility" href="#">Recheck compatibility</a></div>';
 $lang['Image file not found'] = 'Image file not found';
 $lang['Piwigo AI is outdated, please update the plugin. (If you have updated the plugin but the message persists, deactivate and reactivate the plugin.)'] = 'Piwigo AI is outdated, please update the plugin. (If you have updated the plugin but the message persists, deactivate and reactivate the plugin.)';
 $lang['Unable to connect to the Piwigo AI server'] = 'Unable to connect to the Piwigo AI server';
+$lang['Piwigo AI needs a database that can compare vectors: MariaDB 11.8 or newer. Yours is %s. Update your database, then deactivate and reactivate the plugin.'] = 'Piwigo AI needs a database that can compare vectors: MariaDB 11.8 or newer. Yours is %s. Update your database, then deactivate and reactivate the plugin.';
 $lang['No pending tickets at the moment'] = 'No pending tickets at the moment';
 $lang['No failed tickets'] = 'No failed tickets';
 $lang['Purge failed'] = 'Purge failed';
@@ -92,7 +90,6 @@ $lang['Piwigo AI: %s was not analyzed: %s'] = 'Piwigo AI: %s was not analyzed: %
 $lang['Piwigo AI: %d photos were not analyzed: %s'] = 'Piwigo AI: %d photos were not analyzed: %s';
 $lang['Embedding'] = 'Embedding';
 $lang['Tags indexation'] = 'Tags indexation';
-$lang['Your database cannot store embeddings: tags cannot be indexed.'] = 'Your database cannot store embeddings: tags cannot be indexed.';
 $lang['%d of %d tags were sent: %s'] = '%d of %d tags were sent: %s';
 $lang['A tags indexation is already in progress.'] = 'A tags indexation is already in progress.';
 $lang['A tags indexation was already in progress, it is followed now.'] = 'A tags indexation was already in progress, it is followed now.';
@@ -104,7 +101,6 @@ $lang['Indexation in progress…'] = 'Indexation in progress…';
 $lang['The tags indexation has started.'] = 'The tags indexation has started.';
 $lang['The PHP post_max_size is below 8 MB: the tag embeddings will come by polling, more slowly.'] = 'The PHP post_max_size is below 8 MB: the tag embeddings will come by polling, more slowly.';
 $lang['Index 1 tag'] = 'Index 1 tag';
-$lang['Smart and closed tags need a database that can compare vectors (MariaDB 11.7+).'] = 'Smart and closed tags need a database that can compare vectors (MariaDB 11.7+).';
 $lang['Required by the smart and closed tags modes, which choose tags with the photo embedding'] = 'Required by the smart and closed tags modes, which choose tags with the photo embedding';
 $lang['Tags mode'] = 'Tags mode';
 $lang['How the AI chooses the tags of each photo.'] = 'How the AI chooses the tags of each photo.';

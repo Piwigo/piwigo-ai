@@ -72,21 +72,6 @@ function p_ai_add_methods($arr)
   );
 
   $service->addMethod(
-    'pwg.ai.check_compatibility',
-    'p_ws_ai_check_compatibility',
-    array(
-      'pwg_token' => array(),
-    ),
-    'Check Piwigo AI database compatibility',
-    null,
-    array(
-      'hidden' => false,
-      'post_only' => true,
-      'admin_only' => true,
-    )
-  );
-
-  $service->addMethod(
     'pwg.ai.check_tickets',
     'p_ws_ai_check_tickets',
     array(
@@ -219,51 +204,6 @@ function p_ai_add_methods($arr)
 }
 
 /**
- * `Piwigo AI` : the core methods returning whole rows of the tags or images tables also return
- * the binary embedding column, which json_encode cannot encode: the answer comes out empty.
- * Their result is stripped of it. Temporary, until the vectors leave the core tables.
- */
-function p_ai_wrap_core_ws_methods($arr)
-{
-  $service = &$arr[0];
-
-  foreach (array('pwg.tags.getAdminList', 'pwg.tags.getList', 'pwg.images.getInfo', 'pwg.images.search') as $method_name)
-  {
-    if (!isset($service->_methods[$method_name]))
-    {
-      continue;
-    }
-
-    $callback = $service->_methods[$method_name]['callback'];
-    $service->_methods[$method_name]['callback'] = function ($params, &$service) use ($callback) {
-      return p_ai_strip_embeddings(call_user_func_array($callback, array($params, &$service)));
-    };
-  }
-}
-
-function p_ai_strip_embeddings($value)
-{
-  if ($value instanceof PwgNamedArray || $value instanceof PwgNamedStruct)
-  {
-    $value->_content = p_ai_strip_embeddings($value->_content);
-    return $value;
-  }
-
-  if (!is_array($value))
-  {
-    return $value;
-  }
-
-  unset($value['embedding']);
-  foreach ($value as $key => $item)
-  {
-    $value[$key] = p_ai_strip_embeddings($item);
-  }
-
-  return $value;
-}
-
-/**
  * `WS Piwigo AI` : Endpoint for server ai to callback the result
  */
 function p_ws_ai_callback($params)
@@ -367,10 +307,6 @@ function p_ws_ai_config($params)
     {
       return new PwgError(WS_ERR_INVALID_PARAM, 'Invalid tags mode');
     }
-    if ('open' !== $params['tags_mode'] && !p_ai_check_vector_distance())
-    {
-      return new PwgError(400, l10n('Smart and closed tags need a database that can compare vectors (MariaDB 11.7+).'));
-    }
     $tags_state = p_ai_get_tags_indexation_state();
     if ('open' !== $params['tags_mode'] && 0 === $tags_state['indexed'])
     {
@@ -380,34 +316,6 @@ function p_ws_ai_config($params)
   }
   conf_update_param('piwigo_ai', array_merge($conf['piwigo_ai'], $new_conf), true);
   return 'Configuration saved';
-}
-
-/**
- * `WS Piwigo AI` : Check Piwigo AI database compatibility
- */
-function p_ws_ai_check_compatibility($params)
-{
-  if (!connected_with_pwg_ui())
-  {
-    return new PwgError(401, 'Access Denied');
-  }
-
-  if (get_pwg_token() != $params['pwg_token'])
-  {
-    return new PwgError(403, l10n('Invalid security token'));
-  }
-
-  $is_compatible = p_ai_check_db_compatibility(true);
-
-  if ($is_compatible)
-  {
-    include_once(P_AI_PATH . 'include/migrations.inc.php');
-    p_ai_migrate_compatibility_db();
-    p_ai_check_vector_distance(true);
-    return true;
-  }
-
-  return false;
 }
 
 /**
