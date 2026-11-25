@@ -67,6 +67,19 @@ function p_ai_display_photo()
     $img['ocr'] = json_decode($img['ocr'], true);
   }
 
+  $analysis = p_ai_get_image_analysis_state($img['id']);
+  $data = array(
+    'state' => $analysis['state'],
+    'date' => null !== $analysis['date'] ? format_date($analysis['date'], array('day', 'month', 'year', 'time')) : null,
+  );
+
+  $template->block_footer_script(null, 'const p_ai_analysis = '.json_encode($data).';');
+  $template->func_combine_script(array(
+    'id' => 'p_ai_script_picture_modify',
+    'load' => 'footer',
+    'path' => P_AI_PATH.'admin/js/picture_modify.js',
+  ));
+
   $template->set_filename('p_ai_picture_modify', P_AI_PATH.'/admin/template/picture_modify.tpl');
   $template->assign(array('P_AI_IMG' => $img));
   $template->parse('p_ai_picture_modify');

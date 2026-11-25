@@ -1,4 +1,7 @@
 {footer_script}
+const p_ai_str_analysis_completed = "{'Last analysis: %s'|translate|escape:javascript}";
+const p_ai_str_analysis_pending = "{'Analysis pending'|translate|escape:javascript}";
+const p_ai_str_analysis_none = "{'Not analyzed yet'|translate|escape:javascript}";
 {literal}
 (function() {
   const $aiDescription = $('#p_ai_description_field');

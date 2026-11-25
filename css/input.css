@@ -35,3 +35,15 @@
 .p-ai-waiting {
   @apply bg-gray-100 text-gray-500 dark:bg-[#4A4A4A] dark:text-[#C8C8C8];
 }
+
+.p-ai-analysis-completed {
+  @apply text-[#86CA6C];
+}
+
+.p-ai-analysis-pending {
+  @apply text-[#F3AA59];
+}
+
+.p-ai-analysis-none {
+  @apply text-gray-500 dark:text-gray-300;
+}

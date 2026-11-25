@@ -58,4 +58,30 @@ SELECT count(DISTINCT t.image_id)
   ];
 }
 
+function p_ai_get_image_analysis_state($image_id)
+{
+  $query = '
+SELECT status, created_at
+  FROM `'.P_AI_TICKETS_TABLE.'`
+  WHERE image_id = '.$image_id.'
+    AND type = \'analysis\'
+    AND status IN (\'unsent\', \'pending\', \'completed\')
+  ORDER BY id DESC
+  LIMIT 1
+;';
+  $last = pwg_db_fetch_assoc(pwg_query($query));
+
+  if (empty($last))
+  {
+    return array('state' => 'none', 'date' => null);
+  }
+
+  if ('completed' !== $last['status'])
+  {
+    return array('state' => 'pending', 'date' => null);
+  }
+
+  return array('state' => 'completed', 'date' => $last['created_at']);
+}
+
 function p_ai_get_credits() {}

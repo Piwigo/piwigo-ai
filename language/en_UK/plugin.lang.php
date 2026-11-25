@@ -115,3 +115,6 @@ $lang['Index your tags first, from the overview: the smart and closed modes choo
 $lang['%d of %d tags are indexed: the others cannot be chosen until they are indexed, from the overview.'] = '%d of %d tags are indexed: the others cannot be chosen until they are indexed, from the overview.';
 $lang['%d tags of the gallery are not indexed: they cannot be chosen until they are indexed, from the Piwigo AI overview.'] = '%d tags of the gallery are not indexed: they cannot be chosen until they are indexed, from the Piwigo AI overview.';
 $lang['Created by the AI'] = 'Created by the AI';
+$lang['Last analysis: %s'] = 'Last analysis: %s';
+$lang['Analysis pending'] = 'Analysis pending';
+$lang['Not analyzed yet'] = 'Not analyzed yet';
