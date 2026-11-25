@@ -48,6 +48,10 @@ function p_ai_loc_end_admin()
       p_ai_display_add_options();
       break;
 
+    case 'tags':
+      p_ai_display_tags();
+      break;
+
     default:
       break;
   }
@@ -66,6 +70,29 @@ function p_ai_display_photo()
   $template->set_filename('p_ai_picture_modify', P_AI_PATH.'/admin/template/picture_modify.tpl');
   $template->assign(array('P_AI_IMG' => $img));
   $template->parse('p_ai_picture_modify');
+}
+
+function p_ai_display_tags()
+{
+  global $template;
+
+  $ai_tag_ids = query2array('
+SELECT id
+  FROM '.TAGS_TABLE.'
+  WHERE ai = \'true\'
+;', null, 'id');
+
+  $data = array(
+    'ai' => $ai_tag_ids,
+    'str_ai' => l10n('Created by the AI'),
+  );
+
+  $template->block_footer_script(null, 'const p_ai_tags = '.json_encode($data).';');
+  $template->func_combine_script(array(
+    'id' => 'p_ai_script_tags',
+    'load' => 'footer',
+    'path' => P_AI_PATH.'admin/js/tags.js',
+  ));
 }
 
 function p_ai_display_menu()

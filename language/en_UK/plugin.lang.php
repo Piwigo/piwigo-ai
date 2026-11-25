@@ -114,3 +114,4 @@ $lang['Compute the embedding of each photo and of its tags, used to choose the t
 $lang['Index your tags first, from the overview: the smart and closed modes choose among the indexed tags.'] = 'Index your tags first, from the overview: the smart and closed modes choose among the indexed tags.';
 $lang['%d of %d tags are indexed: the others cannot be chosen until they are indexed, from the overview.'] = '%d of %d tags are indexed: the others cannot be chosen until they are indexed, from the overview.';
 $lang['%d tags of the gallery are not indexed: they cannot be chosen until they are indexed, from the Piwigo AI overview.'] = '%d tags of the gallery are not indexed: they cannot be chosen until they are indexed, from the Piwigo AI overview.';
+$lang['Created by the AI'] = 'Created by the AI';
