@@ -19,9 +19,12 @@ $(function() {
       span.setAttribute('aria-label', p_ai_tags.str_ai);
       span.style.marginRight = '6px';
       name.parentNode.insertBefore(span, name);
+
+      // the options of the core for its .tiptip (admin footer.tpl)
+      $(span).tipTip({ delay: 0, fadeIn: 200, fadeOut: 200 });
     } else if (!is_ai && robot) {
       // a recycled box keeps its children: the robot of the previous tag goes
-      robot.remove();
+      $(robot).remove();
     }
   }
 
