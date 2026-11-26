@@ -69,6 +69,7 @@ function p_ai_display_photo()
 
   $analysis = p_ai_get_image_analysis_state($img['id']);
   $data = array(
+    'image_id' => (int)$img['id'],
     'state' => $analysis['state'],
     'date' => null !== $analysis['date'] ? format_date($analysis['date'], array('day', 'month', 'year', 'time')) : null,
   );
@@ -80,8 +81,19 @@ function p_ai_display_photo()
     'path' => P_AI_PATH.'admin/js/picture_modify.js',
   ));
 
+  // the options of the analysis: the checkboxes of the batch manager, in the modal
+  $template->assign(array(
+    'P_AI_EMBEDDING_REQUIRED' => 'open' !== p_ai_tags_mode(),
+    'P_AI_TAGS_NOT_INDEXED' => p_ai_tags_not_indexed(),
+  ));
+  $template->set_filename('p_ai_analyze_options', P_AI_PATH.'/admin/template/batch_manager_global_options.tpl');
+
   $template->set_filename('p_ai_picture_modify', P_AI_PATH.'/admin/template/picture_modify.tpl');
-  $template->assign(array('P_AI_IMG' => $img));
+  $template->assign(array(
+    'P_AI_IMG' => $img,
+    'P_AI_ANALYZE_OPTIONS' => $template->parse('p_ai_analyze_options', true),
+    'P_AI_ANALYSIS_COST' => 1,
+  ));
   $template->parse('p_ai_picture_modify');
 }
 
@@ -203,7 +215,7 @@ function p_ai_element_set_global_add_action()
   
   $template->assign('P_AI_EMBEDDING_REQUIRED', 'open' !== p_ai_tags_mode());
   $template->assign('P_AI_TAGS_NOT_INDEXED', p_ai_tags_not_indexed());
-  $template->set_filename('p_ai_analyze_options', realpath(P_AI_PATH.'/admin/template/batch_manager_global_options.tpl'));
+  $template->set_filename('p_ai_analyze_options', P_AI_PATH.'/admin/template/batch_manager_global_options.tpl');
 
   $template->append(
     'element_set_global_plugins_actions',

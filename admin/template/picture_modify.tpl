@@ -1,7 +1,11 @@
 {footer_script}
+const p_ai_pwg_token = "{$PWG_TOKEN}";
 const p_ai_str_analysis_completed = "{'Last analysis: %s'|translate|escape:javascript}";
 const p_ai_str_analysis_pending = "{'Analysis pending'|translate|escape:javascript}";
 const p_ai_str_analysis_none = "{'Not analyzed yet'|translate|escape:javascript}";
+const p_ai_str_analyze = "{'Analyse photo with Piwigo AI'|translate|escape:javascript}";
+const p_ai_str_analyze_sent = "{'%d photo sent to Piwigo AI'|translate:1|escape:javascript}";
+const p_ai_str_analyze_unsent = "{'%d photo will be sent to Piwigo AI later'|translate:1|escape:javascript}";
 {literal}
 (function() {
   const $aiDescription = $('#p_ai_description_field');
@@ -42,6 +46,37 @@ const p_ai_str_analysis_none = "{'Not analyzed yet'|translate|escape:javascript}
 })();
 {/literal}
 {/footer_script}
+
+{include file='themes/standard_pages/template/toaster.tpl' toaster_mode=$themeconf.colorscheme}
+
+<div class="bg-modal" id="p_ai_analyze_modal">
+  <div class="modal-content">
+    <a class="close-modal icon-cancel" id="p_ai_analyze_close"></a>
+
+    <div class="modal-icon-container">
+      <span class="modal-icon-header icon-blue icon-robot-head"></span>
+    </div>
+    <div class="modal-title-header">
+      <p>{'Analyse photo with Piwigo AI'|translate}</p>
+    </div>
+
+    <div class="modal-body">
+      <p>{'Are you sure you want to analyse this photo with Piwigo AI?'|translate}</p>
+      <div id="p_ai_analyze_pending" class="badge-unsaved hidden">
+        {'An analysis of this photo is already pending. A new request will cost another credit.'|translate}
+      </div>
+      {$P_AI_ANALYZE_OPTIONS}
+      <p>{'As a reminder, this will cost you %s credit.'|translate:$P_AI_ANALYSIS_COST}</p>
+    </div>
+
+    <div class="modal-footer">
+      <p class="modal-footer-close" id="p_ai_analyze_cancel">{'Cancel'|translate}</p>
+      <div class="modal-footer-group">
+        <p class="buttonLike" id="p_ai_analyze_confirm"><span class="icon-robot-head mr-1"></span>{'Confirm'|translate}</p>
+      </div>
+    </div>
+  </div>
+</div>
 
 <p id="p_ai_description_field" class="hidden">
   <strong>{'AI description'|@translate}</strong>

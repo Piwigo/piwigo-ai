@@ -26,23 +26,6 @@ function p_ai_add_methods($arr)
     )
   );
 
-  // the callback url of the tickets sent before pwg.ai.callback
-  $service->addMethod(
-    'pwg.ai.analyze',
-    'p_ws_ai_callback',
-    array(
-      'account_id' => array(),
-      'ticket' => array(),
-    ),
-    'Save ticket infos',
-    null,
-    array(
-      'hidden' => false,
-      'post_only' => true,
-      'admin_only' => false,
-    )
-  );
-
   $service->addMethod(
     'pwg.ai.config',
     'p_ws_ai_config',
@@ -193,6 +176,26 @@ function p_ai_add_methods($arr)
       'status' => array(),
     ),
     'Delete tickets by status.',
+    null,
+    array(
+      'hidden' => false,
+      'post_only' => true,
+      'admin_only' => true,
+    )
+  );
+
+  $service->addMethod(
+    'pwg.ai.analyze_image',
+    'p_ws_ai_analyze_image',
+    array(
+      'image_id' => array('type' => WS_TYPE_ID),
+      'caption' => array('default' => false, 'type' => WS_TYPE_BOOL),
+      'tagging' => array('default' => false, 'type' => WS_TYPE_BOOL),
+      'ocr' => array('default' => false, 'type' => WS_TYPE_BOOL),
+      'embedding' => array('default' => false, 'type' => WS_TYPE_BOOL),
+      'pwg_token' => array(),
+    ),
+    'Send a photo to the AI server for analysis.',
     null,
     array(
       'hidden' => false,
@@ -496,6 +499,11 @@ function p_ws_ai_index_tags($params)
  */
 function p_ws_ai_tags_indexation($params)
 {
+  if (!connected_with_pwg_ui())
+  {
+    return new PwgError(401, 'Access Denied');
+  }
+
   return p_ai_get_tags_indexation_state();
 }
 
@@ -504,6 +512,11 @@ function p_ws_ai_tags_indexation($params)
  */
 function p_ws_ai_tickets_getList($params)
 {
+  if (!connected_with_pwg_ui())
+  {
+    return new PwgError(401, 'Access Denied');
+  }
+
   $allowed_order_fields = array('created_at', 'status', 'cost', 'process_time', 'image_id', 'ticket_id');
   $allowed_status = array('pending', 'completed', 'failed');
 
@@ -582,6 +595,11 @@ SELECT t.*, i.file, i.name
  */
 function p_ws_ai_retry_failed($params)
 {
+  if (!connected_with_pwg_ui())
+  {
+    return new PwgError(401, 'Access Denied');
+  }
+
   if (get_pwg_token() != $params['pwg_token'])
   {
     return new PwgError(403, l10n('Invalid security token'));
@@ -632,6 +650,11 @@ DELETE FROM ' . P_AI_TICKETS_TABLE . '
  */
 function p_ws_ai_purge_tickets($params)
 {
+  if (!connected_with_pwg_ui())
+  {
+    return new PwgError(401, 'Access Denied');
+  }
+
   if (get_pwg_token() != $params['pwg_token'])
   {
     return new PwgError(403, l10n('Invalid security token'));
@@ -651,4 +674,58 @@ function p_ws_ai_purge_tickets($params)
   pwg_query('DELETE FROM ' . P_AI_TICKETS_TABLE . ' WHERE status = "' . $status . '"');
 
   return array('deleted' => intval($count));
+}
+
+/**
+ * `WS Piwigo AI` : Send a photo to the AI server for analysis
+ */
+function p_ws_ai_analyze_image($params)
+{
+  global $conf;
+
+  if (!connected_with_pwg_ui())
+  {
+    return new PwgError(401, 'Access Denied');
+  }
+
+  if (get_pwg_token() != $params['pwg_token'])
+  {
+    return new PwgError(403, l10n('Invalid security token'));
+  }
+
+  if (empty($conf['piwigo_ai']['api_key']))
+  {
+    return new PwgError(400, l10n('Piwigo AI API key is not configured'));
+  }
+
+  $options = array(
+    'caption' => $params['caption'],
+    'tagging' => $params['tagging'],
+    'ocr' => $params['ocr'],
+    'embedding' => $params['embedding'] || 'open' !== p_ai_tags_mode(),
+  );
+
+  if (!$options['caption'] && !$options['tagging'] && !$options['ocr'] && !$options['embedding'])
+  {
+    return new PwgError(400, l10n('Please select at least one Piwigo AI option'));
+  }
+
+  $image_info = get_image_infos($params['image_id']);
+  if (empty($image_info))
+  {
+    return new PwgError(404, 'image_id not found');
+  }
+
+  $response = p_ai_submit_image($image_info, $options);
+
+  if (isset($response['errors']))
+  {
+    return new PwgError(500, $response['errors']);
+  }
+
+  // unsent: the AI server is unreachable, the ticket is kept and sent later
+  return array(
+    'status' => isset($response['unsent']) ? 'unsent' : 'pending',
+    'message' => $response['unsent'] ?? null,
+  );
 }

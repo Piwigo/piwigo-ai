@@ -862,7 +862,6 @@ SELECT *
   return query2array($query, 'ticket_id');
 }
 
-// single-ticket wrapper for the callback path (pwg.ai.analyze)
 function p_ai_sort_polled_tickets(array $pending_ids, array $polled)
 {
   $by_id = array();
