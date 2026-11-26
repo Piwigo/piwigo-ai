@@ -123,3 +123,6 @@ $lang['Are you sure you want to analyse this photo with Piwigo AI?'] = 'Are you 
 $lang['As a reminder, this will cost you %s credit.'] = 'As a reminder, this will cost you %s credit.';
 $lang['Confirm'] = 'Confirm';
 $lang['An analysis of this photo is already pending. You can ask for a new one once it is finished.'] = 'An analysis of this photo is already pending. You can ask for a new one once it is finished.';
+$lang['The analysis is finished.'] = 'The analysis is finished.';
+$lang['Refresh the page'] = 'Refresh the page';
+$lang['refresh and keep my changes'] = 'refresh and keep my changes';

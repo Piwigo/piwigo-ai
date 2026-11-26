@@ -16,8 +16,6 @@ const p_ai_str_analyze_unsent = "{'%d photo will be sent to Piwigo AI later'|tra
   }
 
   const $ocr = $('#p_ai_ocr');
-  if (!$ocr.length) return;
-
   const $ocrToggle = $('#p_ai_ocr_toggle');
   const $ocrContent = $('#p_ai_ocr_content');
   $ocrToggle.on('click', function(event) {
@@ -29,26 +27,52 @@ const p_ai_str_analyze_unsent = "{'%d photo will be sent to Piwigo AI later'|tra
     $ocrToggle.find('.p-ai-ocr-hide').toggleClass('hidden', expanded);
   });
 
-  const $preview = $('#picture-preview');
-  const $wrapper = $('<div>').css({
-    display: 'flex',
-    flexDirection: 'column',
-    flexShrink: 0,
-    maxWidth: $preview.css('max-width'),
-    width: $preview.css('width'),
-    marginLeft: $preview.css('margin-left'),
-  });
+  // the lines of text found in the photo, under its preview: placed there the first time there
+  // are some, at the load of the page or once an analysis brings them
+  let ocr_placed = false;
+  window.p_ai_set_ocr = function(lines) {
+    if (lines) {
+      $ocrContent.empty();
+      lines.forEach(function(line) {
+        $ocrContent.append($('<p class="my-1">').text(String(line)));
+      });
+    }
 
-  $preview.css({ marginLeft: 0, maxWidth: '100%' });
-  $preview.after($wrapper);
-  $wrapper.append($preview).append($ocr);
-  $ocr.removeClass('hidden');
+    const has_lines = $ocrContent.children().length > 0;
+    if (has_lines && !ocr_placed) {
+      const $preview = $('#picture-preview');
+      const $wrapper = $('<div>').css({
+        display: 'flex',
+        flexDirection: 'column',
+        flexShrink: 0,
+        maxWidth: $preview.css('max-width'),
+        width: $preview.css('width'),
+        marginLeft: $preview.css('margin-left'),
+      });
+
+      $preview.css({ marginLeft: 0, maxWidth: '100%' });
+      $preview.after($wrapper);
+      $wrapper.append($preview).append($ocr);
+      ocr_placed = true;
+    }
+    $ocr.toggleClass('hidden', !has_lines);
+  };
+  p_ai_set_ocr();
 })();
 {/literal}
 {/footer_script}
 
 {include file='themes/standard_pages/template/toaster.tpl' toaster_mode=$themeconf.colorscheme}
 {include file=$P_AI_REALTIME_TPL}
+
+{* moved next to the save button by the script; display: none as the core does for its own badges,
+   its savebar-footer-block sets a display *}
+<div class="savebar-footer-block" id="p_ai_analysis_done" style="display: none;">
+  <div class="badge-unsaved">
+    <i class="icon-attention"></i>{'The analysis is finished.'|translate}
+    <a href="#" id="p_ai_analysis_refresh" style="text-decoration: underline;">{'Refresh the page'|translate}</a><span id="p_ai_analysis_keep" style="display: none;">, {'or'|translate} <a href="#" id="p_ai_analysis_refresh_keep" style="text-decoration: underline;">{'refresh and keep my changes'|translate}</a></span>
+  </div>
+</div>
 
 <div class="bg-modal" id="p_ai_analyze_modal">
   <div class="modal-content">
@@ -85,7 +109,6 @@ const p_ai_str_analyze_unsent = "{'%d photo will be sent to Piwigo AI later'|tra
   <textarea id="p_ai_description" class="description" readonly="readonly">{$P_AI_IMG.ai_description|default:''|escape:html}</textarea>
 </p>
 
-{if !empty($P_AI_IMG.ocr)}
 <div id="p_ai_ocr" class="hidden">
   <div class="mt-3 text-sm text-gray-600 pb-16">
     <a href="#" id="p_ai_ocr_toggle" aria-expanded="false" aria-controls="p_ai_ocr_content">
@@ -97,10 +120,11 @@ const p_ai_str_analyze_unsent = "{'%d photo will be sent to Piwigo AI later'|tra
       </span>
     </a>
     <div id="p_ai_ocr_content" class="hidden">
+    {if !empty($P_AI_IMG.ocr)}
     {foreach from=$P_AI_IMG.ocr item=line}
       <p class="my-1">{$line|escape:html}</p>
     {/foreach}
+    {/if}
     </div>
   </div>
 </div>
-{/if}

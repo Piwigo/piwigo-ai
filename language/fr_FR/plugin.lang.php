@@ -123,3 +123,6 @@ $lang['Are you sure you want to analyse this photo with Piwigo AI?'] = 'Voulez-v
 $lang['As a reminder, this will cost you %s credit.'] = 'Pour rappel, cela vous coûtera %s crédit.';
 $lang['Confirm'] = 'Confirmer';
 $lang['An analysis of this photo is already pending. You can ask for a new one once it is finished.'] = 'Une analyse de cette photo est déjà en attente. Vous pourrez en demander une nouvelle quand elle sera terminée.';
+$lang['The analysis is finished.'] = 'L\'analyse est terminée.';
+$lang['Refresh the page'] = 'Rafraîchir la page';
+$lang['refresh and keep my changes'] = 'rafraîchir en gardant mes modifications';
