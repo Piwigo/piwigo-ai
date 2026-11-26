@@ -108,9 +108,21 @@ SELECT id
   $data = array(
     'ai' => $ai_tag_ids,
     'str_ai' => l10n('Created by the AI'),
+    'pwg_token' => get_pwg_token(),
+    'indexation' => p_ai_get_tags_indexation_state(),
+    'str_index_tags' => l10n('Index %d tags'),
+    'str_index_one_tag' => l10n('Index 1 tag'),
+    'str_all_tags_indexed' => l10n('All tags are indexed'),
+    'str_indexation_in_progress' => l10n('Indexation in progress…'),
+    'str_indexation_started' => l10n('The tags indexation has started.'),
   );
 
   $template->block_footer_script(null, 'const p_ai_tags = '.json_encode($data).';');
+  $template->func_combine_script(array(
+    'id' => 'p_ai_realtime',
+    'load' => 'footer',
+    'path' => P_AI_PATH.'admin/js/realtime.js',
+  ));
   $template->func_combine_script(array(
     'id' => 'p_ai_script_tags',
     'load' => 'footer',
