@@ -4,11 +4,17 @@ $(function() {
   if ($('#p-ai-indexation').length) {
     render_tags_state(p_ai_tags_state);
     $('#p-ai-btn-index-tags').on('click', start_tags_indexation);
-    if (p_ai_tags_state.in_progress) follow_tags_indexation();
+
+    // the card follows the indexation, whoever started it
+    p_ai_realtime.subscribe({
+      method: 'pwg.ai.tags_indexation',
+      change: render_tags_state,
+      active: function(state) {
+        return state.in_progress;
+      },
+    });
   }
 });
-
-let p_ai_tags_following = false;
 
 function render_tags_state(state) {
   p_ai_tags_state = state;
@@ -32,7 +38,10 @@ function render_tags_state(state) {
 
 function start_tags_indexation() {
   if (p_ai_tags_state.in_progress || p_ai_tags_state.to_index === 0) return;
-  render_tags_state($.extend({}, p_ai_tags_state, { in_progress: true }));
+
+  // shown in progress at once; back to the state before if the server refuses
+  const before = p_ai_tags_state;
+  render_tags_state($.extend({}, before, { in_progress: true }));
 
   $.ajax({
     url: 'ws.php?format=json&method=pwg.ai.index_tags',
@@ -41,60 +50,16 @@ function start_tags_indexation() {
     data: { pwg_token: p_ai_pwg_token },
     success: function(res) {
       if (res.stat === 'ok') {
-        follow_tags_indexation();
+        p_ai_realtime.refresh();
         pwgToaster({ text: res.result.message || p_ai_str_indexation_started, icon: 'success' });
         return;
       }
-      refresh_tags_state();
+      render_tags_state(before);
       pwgToaster({ text: res.message, icon: 'error' });
     },
     error: function(e) {
-      refresh_tags_state();
+      render_tags_state(before);
       pwgToaster({ text: e.responseJSON?.message ?? e.statusText, icon: 'error' });
-    }
-  });
-}
-
-// the worker only runs on page views: while this page is open, it is run by hand
-function follow_tags_indexation() {
-  if (p_ai_tags_following) return;
-  p_ai_tags_following = true;
-  tags_indexation_round();
-}
-
-function tags_indexation_round() {
-  $.ajax({
-    url: 'ws.php?format=json&method=pwg.ai.check_tickets',
-    type: 'POST',
-    dataType: 'json',
-    data: { pwg_token: p_ai_pwg_token, force: 1 },
-    complete: function() {
-      refresh_tags_state(function(state) {
-        if (state.in_progress) {
-          setTimeout(tags_indexation_round, 5000);
-        } else {
-          p_ai_tags_following = false;
-        }
-      });
-    }
-  });
-}
-
-function refresh_tags_state(then) {
-  $.ajax({
-    url: 'ws.php?format=json&method=pwg.ai.tags_indexation',
-    type: 'GET',
-    dataType: 'json',
-    success: function(res) {
-      if (res.stat !== 'ok') {
-        p_ai_tags_following = false;
-        return;
-      }
-      render_tags_state(res.result);
-      if (then) then(res.result);
-    },
-    error: function() {
-      p_ai_tags_following = false;
     }
   });
 }

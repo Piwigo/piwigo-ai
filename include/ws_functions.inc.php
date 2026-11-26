@@ -185,6 +185,36 @@ function p_ai_add_methods($arr)
   );
 
   $service->addMethod(
+    'pwg.ai.analysis_state',
+    'p_ws_ai_analysis_state',
+    array(
+      'image_id' => array('type' => WS_TYPE_ID),
+    ),
+    'Returns where the analysis of a photo stands: pending, completed with its date, or none.',
+    null,
+    array(
+      'hidden' => false,
+      'post_only' => false,
+      'admin_only' => true,
+    )
+  );
+
+  $service->addMethod(
+    'pwg.ai.status',
+    'p_ws_ai_status',
+    array(
+      'calls' => array(),
+    ),
+    'Returns the answers of several read methods at once, for a page that follows what changes on the server. calls: a JSON list of {"method": "pwg.ai.analysis_state", "params": {"image_id": 1}}, '.P_AI_STATUS_MAX_CALLS.' at most. GET only.',
+    null,
+    array(
+      'hidden' => false,
+      'post_only' => false,
+      'admin_only' => true,
+    )
+  );
+
+  $service->addMethod(
     'pwg.ai.analyze_image',
     'p_ws_ai_analyze_image',
     array(
@@ -734,4 +764,77 @@ function p_ws_ai_analyze_image($params)
     'status' => isset($response['unsent']) ? 'unsent' : 'pending',
     'message' => $response['unsent'] ?? null,
   );
+}
+
+/**
+ * `WS Piwigo AI` : Where the analysis of a photo stands
+ */
+function p_ws_ai_analysis_state($params)
+{
+  if (!connected_with_pwg_ui())
+  {
+    return new PwgError(401, 'Access Denied');
+  }
+
+  include_once(P_AI_PATH.'include/admin_functions.inc.php');
+
+  return p_ai_get_image_analysis_state($params['image_id']);
+}
+
+/**
+ * `WS Piwigo AI` : The answers of several read methods at once. Each method is invoked as if
+ * it were called alone: same checks, same answer, under stat ok or fail
+ */
+function p_ws_ai_status($params, &$service)
+{
+  if (!connected_with_pwg_ui())
+  {
+    return new PwgError(401, 'Access Denied');
+  }
+
+  // read methods only: the core refuses a post_only method outside a POST request
+  if (PwgServer::isPost())
+  {
+    return new PwgError(405, 'This method requires HTTP GET');
+  }
+
+  // piwigo applies addslashes() to every param: stripslashes gives back the JSON sent by the page
+  $calls = json_decode(stripslashes($params['calls']), true);
+
+  if (!is_array($calls) || count($calls) > P_AI_STATUS_MAX_CALLS)
+  {
+    return new PwgError(WS_ERR_INVALID_PARAM, 'Invalid calls');
+  }
+
+  $answers = array();
+  foreach ($calls as $call)
+  {
+    $method = $call['method'] ?? null;
+    $call_params = $call['params'] ?? array();
+
+    if (!is_string($method) || !is_array($call_params) || 'pwg.ai.status' === $method)
+    {
+      $answers[] = array('stat' => 'fail', 'err' => WS_ERR_INVALID_METHOD, 'message' => 'Method name is not valid');
+      continue;
+    }
+
+    // the methods expect their params escaped, as piwigo does for every request
+    array_walk_recursive($call_params, function (&$value) {
+      if (is_string($value))
+      {
+        $value = addslashes($value);
+      }
+    });
+
+    $result = $service->invoke($method, $call_params);
+
+    $answers[] = $result instanceof PwgError
+      ? array('stat' => 'fail', 'err' => $result->code(), 'message' => $result->message())
+      : array('stat' => 'ok', 'result' => $result);
+  }
+
+  // a PwgError sets the HTTP status of the whole answer: here each call carries its own
+  set_status_header(200);
+
+  return $answers;
 }

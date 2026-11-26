@@ -15,6 +15,9 @@ function p_ai_loc_begin_admin_page_load_tw()
   }
   $template->func_combine_css(array('path' => P_AI_PATH.'/css/output.css'));
   $template->func_combine_css(array('path' => P_AI_PATH.'/vendor/fontello/css/fontello.css'));
+
+  // for any template of the admin: {include file=$P_AI_REALTIME_TPL}
+  $template->assign('P_AI_REALTIME_TPL', P_AI_REALPATH.'/admin/template/realtime.tpl');
 }
 
 function p_ai_setprefilter_admins()
@@ -67,12 +70,7 @@ function p_ai_display_photo()
     $img['ocr'] = json_decode($img['ocr'], true);
   }
 
-  $analysis = p_ai_get_image_analysis_state($img['id']);
-  $data = array(
-    'image_id' => (int)$img['id'],
-    'state' => $analysis['state'],
-    'date' => null !== $analysis['date'] ? format_date($analysis['date'], array('day', 'month', 'year', 'time')) : null,
-  );
+  $data = array('image_id' => (int)$img['id']) + p_ai_get_image_analysis_state($img['id']);
 
   $template->block_footer_script(null, 'const p_ai_analysis = '.json_encode($data).';');
   $template->func_combine_script(array(

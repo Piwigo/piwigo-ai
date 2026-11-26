@@ -63,7 +63,7 @@ function p_ai_get_image_analysis_state($image_id)
   $query = '
 SELECT status, created_at
   FROM `'.P_AI_TICKETS_TABLE.'`
-  WHERE image_id = '.$image_id.'
+  WHERE image_id = '.(int)$image_id.'
     AND type = \'analysis\'
     AND status IN (\'unsent\', \'pending\', \'completed\')
   ORDER BY id DESC
@@ -81,7 +81,10 @@ SELECT status, created_at
     return array('state' => 'pending', 'date' => null);
   }
 
-  return array('state' => 'completed', 'date' => $last['created_at']);
+  return array(
+    'state' => 'completed',
+    'date' => format_date($last['created_at'], array('day', 'month', 'year', 'time')),
+  );
 }
 
 function p_ai_get_credits() {}

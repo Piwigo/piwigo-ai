@@ -164,4 +164,5 @@ const str_success = "{'Success'|translate|escape:javascript}"
 
   </main>
   {include file='themes/standard_pages/template/toaster.tpl'}
+  {include file=$P_AI_REALTIME_TPL}
 </div>

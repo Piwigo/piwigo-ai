@@ -48,6 +48,7 @@ const p_ai_str_analyze_unsent = "{'%d photo will be sent to Piwigo AI later'|tra
 {/footer_script}
 
 {include file='themes/standard_pages/template/toaster.tpl' toaster_mode=$themeconf.colorscheme}
+{include file=$P_AI_REALTIME_TPL}
 
 <div class="bg-modal" id="p_ai_analyze_modal">
   <div class="modal-content">

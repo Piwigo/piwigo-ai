@@ -15,3 +15,4 @@ define('P_AI_EMBEDDING_DIMENSION', 1152);
 define('P_AI_TAGS_PER_REQUEST', 20000);
 define('P_AI_MAX_TAGS', 5);
 define('P_AI_POLL_LIMIT', 100);
+define('P_AI_STATUS_MAX_CALLS', 20);
