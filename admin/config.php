@@ -11,9 +11,16 @@ check_status(ACCESS_ADMINISTRATOR);
 // |Actions                                                                |
 // +-----------------------------------------------------------------------
 
-global $template;
+global $template, $conf;
 
-$template->assign('P_AI_TAGS_STATE', p_ai_get_tags_indexation_state());
+$health = p_ai_get('/health');
+
+$template->assign(array(
+  'P_AI_TAGS_STATE' => p_ai_get_tags_indexation_state(),
+  'P_AI_SERVER_ONLINE' => $health['up'] ?? false,
+  'P_AI_ANALYSIS_UP' => $health['ai_server_up'] ?? null,
+  'P_AI_SERVER_DOMAIN' => preg_replace("(^https?://)", "", $conf['piwigo_ai']['url_server_ai']),
+));
 
 // +-----------------------------------------------------------------------+
 // | template init                                                         |

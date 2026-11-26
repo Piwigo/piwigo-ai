@@ -69,7 +69,7 @@ function load_recent_tickets() {
     url: 'ws.php?format=json&method=pwg.ai.tickets.getList',
     type: 'GET',
     dataType: 'json',
-    data: { per_page: 5, page: 0, order: 'created_at', order_direction: 'DESC' },
+    data: { per_page: 10, page: 0, order: 'created_at', order_direction: 'DESC' },
     success: function(res) {
       $('#p-ai-recent-loading').hide();
       if (res.stat !== 'ok') return;
@@ -78,8 +78,7 @@ function load_recent_tickets() {
       if (!tickets || tickets.length === 0) return;
 
       $.each(tickets, function(i, ticket) {
-        const is_last = i === tickets.length - 1;
-        $('#p-ai-recent-list').append(render_recent_row(ticket, is_last));
+        $('#p-ai-recent-list').append(render_recent_row(ticket));
       });
     },
     error: function() {
@@ -88,30 +87,29 @@ function load_recent_tickets() {
   });
 }
 
-function render_recent_row(ticket, is_last) {
+function render_recent_row(ticket) {
   const name = $('<span>').text(ticket.name || ticket.file || '').html();
   const photo_link = p_ai_root_url + 'admin.php?page=photo-' + ticket.image_id;
   const subject = ticket.type === 'embed_tags'
-    ? '<i class="icon-tags text-gray-300 shrink-0"></i>'
-      + '<span class="text-sm font-medium truncate">' + p_ai_str_tags_indexation + '</span>'
-    : '<i class="icon-picture text-gray-300 shrink-0"></i>'
-      + '<a class="text-sm font-medium truncate hover:text-[#F3A73B]" href="' + photo_link + '">' + name + '</a>';
+    ? '<i class="icon-tags p-ai-muted shrink-0"></i>'
+      + '<span class="text-xs font-medium truncate">' + p_ai_str_tags_indexation + '</span>'
+    : '<i class="icon-picture p-ai-muted shrink-0"></i>'
+      + '<a class="text-xs font-medium truncate hover:text-[#F3A73B]" href="' + photo_link + '">' + name + '</a>';
 
   let status_html;
   if (ticket.status === 'completed') {
     status_html = '<span class="inline-flex items-center gap-1 p-ai-success text-xs px-2 py-0.5 rounded shrink-0"><i class="icon-ok"></i> ' + p_ai_str_status_completed + '</span>';
   } else if (ticket.status === 'failed') {
-    status_html = '<span class="inline-flex items-center gap-1 p-ai-error text-xs px-2 py-0.5 rounded shrink-0"><i class="icon-cancel"></i> ' + p_ai_str_status_failed + '</span>';
+    status_html = '<span class="inline-flex items-center gap-1 p-ai-error text-xs px-2 py-0.5 rounded shrink-0"><i class="icon-cancel-circled"></i> ' + p_ai_str_status_failed + '</span>';
   } else {
-    status_html = '<span class="inline-flex items-center gap-1 p-ai-waiting text-xs px-2 py-0.5 rounded italic shrink-0"><i class="icon-clock"></i> ' + p_ai_str_status_pending + '</span>';
+    status_html = '<span class="inline-flex items-center gap-1 p-ai-waiting text-xs px-2 py-0.5 rounded shrink-0"><i class="icon-clock"></i> ' + p_ai_str_status_pending + '</span>';
   }
 
-  const border = is_last ? '' : ' border-b border-gray-100 dark:border-[#3f3f3f]';
-  return '<div class="grid grid-cols-[1fr_auto_auto] items-center py-2' + border + '">'
+  return '<div class="p-ai-row grid grid-cols-[1fr_auto_auto] items-center">'
     + '<div class="flex items-center gap-2 min-w-0">'
     + subject
     + '</div>'
-    + '<span class="text-xs text-gray-400 px-3 shrink-0"><i class="icon-ai-token"></i> ' + (ticket.cost || '—') + '</span>'
+    + '<span class="p-ai-muted text-xs px-3 shrink-0"><i class="icon-ai-token"></i> ' + (ticket.cost || '—') + '</span>'
     + status_html
     + '</div>';
 }

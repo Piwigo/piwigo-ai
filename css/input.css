@@ -25,15 +25,23 @@
 }
 
 .p-ai-success {
-  @apply bg-green-100 text-green-600 dark:bg-[#4EA590] dark:text-[#AAF6E4];
+  @apply border border-[#6DCE5E] bg-[#EEFFEB] text-[#254520] dark:border-[#AAF6E4] dark:bg-[#4EA590] dark:text-[#AAF6E4];
+}
+
+.p-ai-success i {
+  @apply text-[#6DCE5E] dark:text-[#AAF6E4];
 }
 
 .p-ai-error {
-  @apply bg-red-100 text-red-500 dark:bg-[##BE4949] dark:text-[#FFC8C8];
+  @apply border border-[#EB3D33] bg-[#FFE7EB] text-[#502421] dark:border-[#FFC8C8] dark:bg-[#BE4949] dark:text-[#FFC8C8];
+}
+
+.p-ai-error i {
+  @apply text-[#EB3D33] dark:text-[#FFC8C8];
 }
 
 .p-ai-waiting {
-  @apply bg-gray-100 text-gray-500 dark:bg-[#4A4A4A] dark:text-[#C8C8C8];
+  @apply border border-[#777777] bg-[#F3F3F3] text-[#777777] dark:border-[#C8C8C8] dark:bg-[#4A4A4A] dark:text-[#C8C8C8];
 }
 
 .p-ai-analysis-completed {
@@ -46,4 +54,44 @@
 
 .p-ai-analysis-none {
   @apply text-gray-500 dark:text-gray-300;
+}
+
+.p-ai-card {
+  @apply bg-[#fafafa] dark:bg-[#333] rounded shadow-sm p-4;
+}
+
+.p-ai-card-icon {
+  @apply inline-flex items-center justify-center w-8 h-8 rounded-full shrink-0;
+}
+
+.p-ai-count {
+  @apply inline-flex items-center px-2 rounded-full text-xs font-bold bg-[#777777] text-white;
+}
+
+.p-ai-muted {
+  @apply text-gray-500 dark:text-[#b0b0b0];
+}
+
+.p-ai-bar {
+  @apply bg-gray-200 dark:bg-[#444] rounded-full h-1.5;
+}
+
+.p-ai-bar-fill {
+  @apply h-1.5 rounded-full bg-[#777777] dark:bg-[#b0b0b0];
+}
+
+.p-ai-pill {
+  @apply flex items-center gap-2 rounded shadow-sm px-4 py-2;
+}
+
+.p-ai-pill-credits {
+  @apply bg-[#FFF3DB] text-[#E18C32]! dark:bg-[#4A3A1E] dark:text-[#FFD9A0]!;
+}
+
+.p-ai-pill-coverage {
+  @apply bg-[#D3EAFD] text-[#4182BE] dark:bg-[#27405A] dark:text-[#CFE6FB];
+}
+
+.p-ai-row {
+  @apply bg-[#FAFAFA] dark:bg-[#333] rounded shadow-sm px-3 py-2;
 }

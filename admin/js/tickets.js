@@ -215,9 +215,9 @@ function render_row(ticket) {
   if (ticket.status === 'completed') {
     status_html = '<span class="inline-flex items-center gap-1 p-ai-success text-xs px-2 py-1 rounded font-medium"><i class="icon-ok"></i> ' + p_ai_str_status_completed + '</span>';
   } else if (ticket.status === 'failed') {
-    status_html = '<span class="inline-flex items-center gap-1 p-ai-error text-xs px-2 py-1 rounded font-medium"><i class="icon-cancel"></i> ' + p_ai_str_status_failed + '</span>';
+    status_html = '<span class="inline-flex items-center gap-1 p-ai-error text-xs px-2 py-1 rounded font-medium"><i class="icon-cancel-circled"></i> ' + p_ai_str_status_failed + '</span>';
   } else {
-    status_html = '<span class="inline-flex items-center gap-1 p-ai-waiting text-xs px-2 py-1 rounded italic"><i class="icon-clock"></i> ' + p_ai_str_status_pending + '</span>';
+    status_html = '<span class="inline-flex items-center gap-1 p-ai-waiting text-xs px-2 py-1 rounded"><i class="icon-clock"></i> ' + p_ai_str_status_pending + '</span>';
   }
 
   return '<div class="grid grid-cols-[2fr_2.5fr_1fr_2fr_1fr] items-center min-h-10 mb-2.5 shadow-sm text-start bg-[#fafafa] dark:bg-[#333] dark:text-[#a1a1a1]">'

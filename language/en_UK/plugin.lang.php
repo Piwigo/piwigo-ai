@@ -126,3 +126,10 @@ $lang['An analysis of this photo is already pending. You can ask for a new one o
 $lang['The analysis is finished.'] = 'The analysis is finished.';
 $lang['Refresh the page'] = 'Refresh the page';
 $lang['refresh and keep my changes'] = 'refresh and keep my changes';
+$lang['Get more'] = 'Get more';
+$lang['gallery covered'] = 'gallery covered';
+$lang['Photos with at least one completed analysis'] = 'Photos with at least one completed analysis';
+$lang['photos analyzed'] = 'photos analyzed';
+$lang['Analyzed photos'] = 'Analyzed photos';
+$lang['generated tags'] = 'generated tags';
+$lang['Association mode'] = 'Association mode';

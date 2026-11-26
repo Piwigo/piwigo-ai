@@ -28,5 +28,6 @@ $template->assign(array(
   'P_AI_PATH'=> P_AI_PATH,
   'P_AI_CONFIG' => $conf['piwigo_ai'],
   'PWG_TOKEN' => get_pwg_token(),
+  'ADMIN_PAGE_TITLE' => 'Piwigo AI',
 ));
 $template->assign_var_from_handle('ADMIN_CONTENT', 'p_ai_admin_content');

@@ -54,6 +54,8 @@ function p_ai_save() {
     success: function(res) {
       if (res.stat === 'ok')
       {
+        // the AI Server card shows the mode that was just saved
+        $('#p_ai_server_mode').text(is_accessible ? p_ai_str_mode_public : p_ai_str_mode_private);
         p_show_success();
         return;
       }
