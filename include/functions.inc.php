@@ -447,6 +447,57 @@ SELECT tag_id, 1 - VEC_DISTANCE_COSINE(embedding, VEC_FromText(\''.pwg_db_real_e
 ;', 'tag_id', 'score');
 }
 
+// the indexed tags closest to a tag, the closest first: id, name as it is displayed, similarity
+// (1 - cosine distance) and number of photos. null when the tag has no vector.
+// The two vectors are compared in the database, they never come to PHP
+function p_ai_similar_tags($tag_id, $limit)
+{
+  list($is_indexed) = pwg_db_fetch_row(pwg_query('
+SELECT COUNT(*)
+  FROM '.P_AI_TAG_VECTORS_TABLE.'
+  WHERE tag_id = '.(int)$tag_id.'
+;'));
+  if (!$is_indexed)
+  {
+    return null;
+  }
+
+  // o: the vector of the tag, v: the vectors of the other tags of the same model
+  $rows = query2array('
+SELECT t.id, t.name, t.url_name, 1 - VEC_DISTANCE_COSINE(v.embedding, o.embedding) AS score
+  FROM '.P_AI_TAG_VECTORS_TABLE.' AS o
+    JOIN '.P_AI_TAG_VECTORS_TABLE.' AS v ON v.embedding_model = o.embedding_model AND v.tag_id != o.tag_id
+    JOIN '.TAGS_TABLE.' AS t ON t.id = v.tag_id
+  WHERE o.tag_id = '.(int)$tag_id.'
+  ORDER BY score DESC
+  LIMIT '.(int)$limit.'
+;');
+  if (empty($rows))
+  {
+    return array();
+  }
+
+  $counters = query2array('
+SELECT tag_id, COUNT(*) AS counter
+  FROM '.IMAGE_TAG_TABLE.'
+  WHERE tag_id IN ('.implode(',', array_map('intval', array_column($rows, 'id'))).')
+  GROUP BY tag_id
+;', 'tag_id', 'counter');
+
+  $tags = array();
+  foreach ($rows as $row)
+  {
+    $tags[] = array(
+      'id' => (int)$row['id'],
+      'name' => trigger_change('render_tag_name', $row['name'], $row),
+      'score' => round((float)$row['score'], 3),
+      'counter' => (int)($counters[$row['id']] ?? 0),
+    );
+  }
+
+  return $tags;
+}
+
 // smart and closed modes: the tags of a photo chosen by their similarity with it, among the
 // indexed tags and the candidates of the AI, a candidate becoming the existing tag it names.
 // A candidate too close to a kept tag is not created: it would only repeat it ("formule un"

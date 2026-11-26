@@ -114,6 +114,21 @@ function p_ai_add_methods($arr)
   );
 
   $service->addMethod(
+    'pwg.ai.similar_tags',
+    'p_ws_ai_similar_tags',
+    array(
+      'tag_id' => array('type' => WS_TYPE_ID),
+    ),
+    'Returns the indexed tags closest to a tag, with their similarity.',
+    null,
+    array(
+      'hidden' => false,
+      'post_only' => false,
+      'admin_only' => true,
+    )
+  );
+
+  $service->addMethod(
     'pwg.ai.tickets.getList',
     'p_ws_ai_tickets_getList',
     array(
@@ -535,6 +550,24 @@ function p_ws_ai_tags_indexation($params)
   }
 
   return p_ai_get_tags_indexation_state();
+}
+
+/**
+ * `WS Piwigo AI` : the 10 indexed tags closest to a tag
+ */
+function p_ws_ai_similar_tags($params)
+{
+  if (!connected_with_pwg_ui())
+  {
+    return new PwgError(401, 'Access Denied');
+  }
+
+  $tags = p_ai_similar_tags($params['tag_id'], 10);
+
+  return array(
+    'indexed' => null !== $tags,
+    'tags' => null !== $tags ? $tags : array(),
+  );
 }
 
 /**

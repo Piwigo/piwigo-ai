@@ -96,13 +96,10 @@
   @apply bg-[#FAFAFA] dark:bg-[#333] rounded shadow-sm px-3 py-2;
 }
 
-/* a button of the plugin in the header of the tags page, next to "Add a tag". The core hides
-   what is not for the selection mode with a hide class that only styles its own form */
 .p-ai-tag-action {
   @apply ml-2;
 }
 
-/* on the text and not on the icon: the icon font sets its own margins on every ::before */
 .p-ai-tag-action p {
   margin-left: 6px;
 }
@@ -112,9 +109,6 @@
   display: none;
 }
 
-/* the warning of the core (orphan tags) goes under the buttons: the header may wrap, and an
-   empty item as wide as the header ends the line of the buttons. The passing messages (done,
-   error) stay on that line, after the buttons, so they do not move the page */
 .tag-header.p-ai-tag-header {
   flex-wrap: wrap;
 }
@@ -130,15 +124,45 @@
   height: 0;
 }
 
-/* no left margin: the core gives one to its messages to part them from the button beside */
 .p-ai-tag-header .info-warning {
   order: 3;
   margin-top: 8px;
   margin-left: 0;
 }
 
-/* the search of the core is placed out of the flow, in the middle of the height of the header:
-   kept on the line of the buttons when the header has two lines */
 .p-ai-tag-header #search-tag {
   align-self: flex-start;
+}
+
+.p-ai-similar-row {
+  @apply relative grid grid-cols-[1fr_90px_70px] items-center gap-2 h-7;
+}
+
+.p-ai-similar-check {
+  display: none;
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  line-height: 0;
+}
+
+.p-ai-similar-select .p-ai-similar-check {
+  display: block;
+}
+
+#p_ai_similar_rows .select-checkbox {
+  width: 11px;
+  height: 11px;
+  margin-left: 0;
+}
+
+.p-ai-similar-select #p_ai_similar_rows .p-ai-similar-row {
+  @apply bg-[#FAFAFA] dark:bg-[#333] rounded shadow-sm cursor-pointer;
+  margin: 0 -10px 0 -28px;
+  padding: 0 10px 0 28px;
+}
+
+.p-ai-similar-merge p {
+  margin-left: 6px;
 }
