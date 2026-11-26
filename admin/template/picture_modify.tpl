@@ -63,7 +63,7 @@ const p_ai_str_analyze_unsent = "{'%d photo will be sent to Piwigo AI later'|tra
     <div class="modal-body">
       <p>{'Are you sure you want to analyse this photo with Piwigo AI?'|translate}</p>
       <div id="p_ai_analyze_pending" class="badge-unsaved hidden">
-        {'An analysis of this photo is already pending. A new request will cost another credit.'|translate}
+        {'An analysis of this photo is already pending. You can ask for a new one once it is finished.'|translate}
       </div>
       {$P_AI_ANALYZE_OPTIONS}
       <p>{'As a reminder, this will cost you %s credit.'|translate:$P_AI_ANALYSIS_COST}</p>

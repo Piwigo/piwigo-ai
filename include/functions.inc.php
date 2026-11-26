@@ -1334,19 +1334,19 @@ function p_ai_check_tickets()
   $has_tickets = false;
   if (empty($conf['piwigo_ai']['is_accessible']))
   {
-    $has_tickets = p_ai_has_pending_ticket('use_callback = \'false\'');
+    $has_tickets = p_ai_has_ticket_to_poll();
   }
 
   if (!$has_tickets && !p_ai_check_seeded_recently(300, 'ai_check_tickets_last_unsent'))
   {
     conf_update_param('ai_check_tickets_last_unsent', time());
-    $has_tickets = p_ai_has_pending_ticket('COALESCE(send_attempt_at, created_at) < NOW() - INTERVAL 10 MINUTE', 'unsent');
+    $has_tickets = p_ai_has_ticket_to_send();
   }
 
   if (!$has_tickets && !p_ai_check_seeded_recently(600, 'ai_check_tickets_last_fallback'))
   {
     conf_update_param('ai_check_tickets_last_fallback', time());
-    $has_tickets = p_ai_has_pending_ticket('created_at < NOW() - INTERVAL 30 MINUTE');
+    $has_tickets = p_ai_has_overdue_ticket();
   }
 
   if (!$has_tickets) return;
@@ -1358,15 +1358,57 @@ function p_ai_check_tickets()
   p_ai_fire_check_worker($exec_id, 0);
 }
 
-function p_ai_has_pending_ticket($condition, $status = 'pending')
+// a photo waits for an analysis while one of its tickets is not sent yet or not finished
+function p_ai_has_waiting_analysis($image_id)
 {
   $query = '
 SELECT id
   FROM '.P_AI_TICKETS_TABLE.'
-  WHERE
-    status = \''.$status.'\'
-  AND
-    '.$condition.'
+  WHERE image_id = '.(int)$image_id.'
+    AND type = \'analysis\'
+    AND status IN (\'unsent\', \'pending\')
+  LIMIT 1
+;';
+
+  return pwg_db_num_rows(pwg_query($query)) > 0;
+}
+
+// a pending ticket the AI server will not push: its result has to be polled
+function p_ai_has_ticket_to_poll()
+{
+  $query = '
+SELECT id
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE status = \'pending\'
+    AND use_callback = \'false\'
+  LIMIT 1
+;';
+
+  return pwg_db_num_rows(pwg_query($query)) > 0;
+}
+
+// a ticket not sent yet, whose last attempt is older than 10 minutes: time to try again
+function p_ai_has_ticket_to_send()
+{
+  $query = '
+SELECT id
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE status = \'unsent\'
+    AND COALESCE(send_attempt_at, created_at) < NOW() - INTERVAL 10 MINUTE
+  LIMIT 1
+;';
+
+  return pwg_db_num_rows(pwg_query($query)) > 0;
+}
+
+// a ticket pending for more than 30 minutes: its push may be lost, the poll is the fallback
+function p_ai_has_overdue_ticket()
+{
+  $query = '
+SELECT id
+  FROM '.P_AI_TICKETS_TABLE.'
+  WHERE status = \'pending\'
+    AND created_at < NOW() - INTERVAL 30 MINUTE
   LIMIT 1
 ;';
 

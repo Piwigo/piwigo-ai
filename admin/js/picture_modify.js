@@ -57,14 +57,19 @@ function p_ai_analyze_image(modal, button) {
     },
     error: function(e) {
       button.removeClass(sending);
+      // refused: an analysis was asked meanwhile, from another tab or by another admin
+      if (e.status === 409) {
+        p_ai_set_analysis_state('pending');
+      }
       pwgToaster({ text: e.responseJSON?.message ?? e.statusText, icon: 'error' });
     }
   });
 }
 
 function p_ai_set_analysis_state(state, date) {
-  // the modal warns that a new request costs a credit again
+  // one analysis at a time per photo: while one is pending, the modal says so and cannot confirm
   $('#p_ai_analyze_pending').toggleClass('hidden', state !== 'pending');
+  $('#p_ai_analyze_confirm').toggleClass('opacity-50 pointer-events-none', state === 'pending');
 
   const image_id = document.querySelector('h1 .image-id');
   if (!image_id) return;

@@ -452,7 +452,7 @@ function p_ai_check_tickets_next($params, $count)
     && $iteration < 20
     && (count(p_ai_get_pending_tickets()) > 0
       || count(p_ai_get_pending_tags_indexations()) > 0
-      || p_ai_has_pending_ticket('COALESCE(send_attempt_at, created_at) < NOW() - INTERVAL 10 MINUTE', 'unsent'));
+      || p_ai_has_ticket_to_send());
 
   if ($has_more)
   {
@@ -714,6 +714,12 @@ function p_ws_ai_analyze_image($params)
   if (empty($image_info))
   {
     return new PwgError(404, 'image_id not found');
+  }
+
+  // one analysis at a time per photo: a second one would cost a credit again
+  if (p_ai_has_waiting_analysis($params['image_id']))
+  {
+    return new PwgError(409, l10n('An analysis of this photo is already pending. You can ask for a new one once it is finished.'));
   }
 
   $response = p_ai_submit_image($image_info, $options);
